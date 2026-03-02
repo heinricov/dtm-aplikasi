@@ -20,7 +20,17 @@ async function bootstrap() {
     return start;
   };
   const port = await resolvePort(basePort);
-  await app.listen(port);
+  try {
+    await app.listen(port, '0.0.0.0');
+  } catch (e) {
+    const err = e as { code?: string };
+    if (err?.code === 'EADDRINUSE') {
+      const next = await resolvePort(port + 1);
+      await app.listen(next, '0.0.0.0');
+    } else {
+      throw new Error(String(err));
+    }
+  }
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 void bootstrap();
