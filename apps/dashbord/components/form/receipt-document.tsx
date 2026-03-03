@@ -21,18 +21,17 @@ export function ReceiptDocumentDialog({
 }) {
   return (
     <Dialog>
-      <form>
-        <DialogTrigger asChild>
-          {trigger ?? <Button variant="outline">Open Dialog</Button>}
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
-            </DialogDescription>
-          </DialogHeader>
+      <DialogTrigger asChild>
+        {trigger ?? <Button variant="outline">Open Dialog</Button>}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edit profile</DialogTitle>
+          <DialogDescription>
+            Make changes to your profile here. Click save when you&apos;re done.
+          </DialogDescription>
+        </DialogHeader>
+        <form>
           <FieldGroup>
             <Field>
               <Label htmlFor="name-1">Name</Label>
@@ -50,8 +49,8 @@ export function ReceiptDocumentDialog({
             </DialogClose>
             <Button type="submit">Save changes</Button>
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 }

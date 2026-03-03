@@ -5,6 +5,13 @@ import { createServer } from 'node:net';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, X-Requested-With',
+    exposedHeaders: 'Content-Length',
+  });
   const basePort = Number(process.env.PORT ?? 6000);
   const resolvePort = async (start: number) => {
     const isFree = (port: number) =>
