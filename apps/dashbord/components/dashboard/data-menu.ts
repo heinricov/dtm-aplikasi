@@ -35,6 +35,10 @@ export const dataMenus = {
           url: "/dashboard/master-data/document-type"
         },
         {
+          title: "Silo",
+          url: "/dashboard/master-data/silo"
+        },
+        {
           title: "Sender",
           url: "/dashboard/master-data/sender"
         },
