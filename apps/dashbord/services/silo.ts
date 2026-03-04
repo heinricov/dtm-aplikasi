@@ -89,4 +89,3 @@ export async function deleteSilo(id: UUID): Promise<void> {
     method: "DELETE"
   });
 }
-

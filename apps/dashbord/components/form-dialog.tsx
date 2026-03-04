@@ -15,7 +15,9 @@ export function FormDialog({
   title,
   description,
   formFields,
-  trigger
+  trigger,
+  open: openProp,
+  onOpenChange
 }: {
   title: string;
   description: string;
@@ -23,9 +25,23 @@ export function FormDialog({
     | React.ReactNode
     | ((utils: { close: () => void }) => React.ReactNode);
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const close = React.useCallback(() => setOpen(false), []);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = typeof openProp === "boolean";
+  const open = isControlled ? (openProp as boolean) : internalOpen;
+  const setOpen = React.useCallback(
+    (val: boolean) => {
+      if (isControlled) {
+        onOpenChange?.(val);
+      } else {
+        setInternalOpen(val);
+      }
+    },
+    [isControlled, onOpenChange]
+  );
+  const close = React.useCallback(() => setOpen(false), [setOpen]);
 
   const renderedFields = React.useMemo(() => {
     if (typeof formFields === "function") {

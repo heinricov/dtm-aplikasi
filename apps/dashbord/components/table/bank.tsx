@@ -3,16 +3,107 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "../ui/dropdown-menu";
-import { Bank } from "@/services/bank";
+import BankForm from "@/components/form/bank";
+import { FormDialog } from "@/components/form-dialog";
+import { Bank, deleteBank } from "@/services/bank";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confrim-dialog";
+
+function RowActions({ item }: { item: Bank }) {
+  const router = useRouter();
+  const [openView, setOpenView] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
+  async function onDelete() {
+    try {
+      await deleteBank(item.id as string);
+      toast.success("Bank deleted");
+      router.refresh();
+    } catch (err) {
+      const message =
+        (err as { message?: string })?.message ?? "Failed to delete";
+      toast.error(message);
+    }
+  }
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="h-8 w-8 p-0" variant="ghost">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setOpenView(true);
+            }}
+          >
+            <Eye />
+            View
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setOpenEdit(true);
+            }}
+          >
+            <Pencil className="h-4 w-4 text-blue-500" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setOpenDelete(true);
+            }}
+          >
+            <Trash className="h-4 w-4 text-red-500" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog
+        open={openDelete}
+        onOpenChange={setOpenDelete}
+        title="Delete Bank?"
+        description={
+          <>
+            This action cannot be undone. This will permanently delete
+            <br />
+            <strong>{item.title}</strong>.
+          </>
+        }
+        confirmLabel="Delete"
+        onConfirm={onDelete}
+      />
+      <FormDialog
+        open={openView}
+        onOpenChange={setOpenView}
+        title="View Bank"
+        description="Detail bank"
+        formFields={<BankForm mode="view" initial={item} />}
+      />
+      <FormDialog
+        open={openEdit}
+        onOpenChange={setOpenEdit}
+        title="Edit Bank"
+        description="Update the bank"
+        formFields={<BankForm mode="edit" initial={item} />}
+      />
+    </>
+  );
+}
 
 export const columns: ColumnDef<Bank>[] = [
   {
@@ -51,30 +142,7 @@ export const columns: ColumnDef<Bank>[] = [
   },
   {
     id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const item = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="h-8 w-8 p-0" variant="ghost">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(item.id)}
-            >
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View detail</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
+    header: "Actions",
+    cell: ({ row }) => <RowActions item={row.original} />
   }
 ];

@@ -7,16 +7,22 @@ import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { createBank } from "@/services/bank";
+import { createBank, updateBank, type Bank } from "@/services/bank";
 import { toast } from "sonner";
 
 export default function BankForm({
-  onSuccessClose
+  onSuccessClose,
+  mode = "create",
+  initial
 }: {
   onSuccessClose?: () => void;
+  mode?: "create" | "edit" | "view";
+  initial?: Partial<Bank> & { id?: string };
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const isView = mode === "view";
+  const isEdit = mode === "edit";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,14 +33,24 @@ export default function BankForm({
     const description = String(fd.get("description") ?? "").trim();
     try {
       setSubmitting(true);
-      await createBank({
-        title,
-        description: description || undefined
-      });
+      if (isView) return;
+      if (isEdit && initial?.id) {
+        await updateBank(initial.id as string, {
+          title,
+          // Kirim string apa adanya agar bisa mengosongkan deskripsi
+          description
+        });
+        toast.success("Bank updated successfully");
+      } else {
+        await createBank({
+          title,
+          description: description || undefined
+        });
+        toast.success("Bank created successfully");
+      }
       form.reset();
       router.refresh();
       onSuccessClose?.();
-      toast.success("Bank created successfully");
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";
@@ -54,6 +70,8 @@ export default function BankForm({
                 id="title"
                 name="title"
                 placeholder="Input Title here"
+                defaultValue={initial?.title ? String(initial.title) : ""}
+                disabled={isView}
                 required
               />
             </Field>
@@ -63,17 +81,23 @@ export default function BankForm({
                 id="description-1"
                 name="description"
                 placeholder="Input Description here"
+                defaultValue={
+                  initial?.description ? String(initial.description) : ""
+                }
+                disabled={isView}
               />
             </Field>
           </FieldGroup>
           <Separator className="my-4" />
           <DialogFooter className="flex justify-end px-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{isView ? "Close" : "Cancel"}</Button>
             </DialogClose>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : "Add New"}
-            </Button>
+            {!isView && (
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+              </Button>
+            )}
           </DialogFooter>
         </FieldSet>
       </FieldGroup>

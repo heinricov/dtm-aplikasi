@@ -1,6 +1,6 @@
 import DocumentTypeForm from "@/components/form/document-type";
-import { FormDialog } from "@/components/form/form-dialog";
-import DataTable from "@/components/table/data-table";
+import { FormDialog } from "@/components/form-dialog";
+import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { columns } from "@/components/table/user";

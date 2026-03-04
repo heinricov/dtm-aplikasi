@@ -7,17 +7,17 @@ import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { createVendor, updateVendor, type Vendor } from "@/services/vendor";
+import { createUser, updateUser, type User } from "@/services/user";
 import { toast } from "sonner";
 
-export default function VendorForm({
+export default function UserForm({
   onSuccessClose,
   mode = "create",
   initial
 }: {
   onSuccessClose?: () => void;
   mode?: "create" | "edit" | "view";
-  initial?: Partial<Vendor> & { id?: string };
+  initial?: Partial<User> & { id?: string };
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -27,35 +27,42 @@ export default function VendorForm({
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
+    if (isView) return;
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const title = String(fd.get("title") ?? "").trim();
     const name = String(fd.get("name") ?? "").trim();
-    const description = String(fd.get("description") ?? "").trim();
+    const email = String(fd.get("email") ?? "").trim();
+    const roleRaw = String(fd.get("role") ?? "");
+    const password = String(fd.get("password") ?? "");
     try {
       setSubmitting(true);
-      if (isView) return;
       if (isEdit && initial?.id) {
-        await updateVendor(initial.id as string, {
-          title,
-          name,
-          description
-        });
-        toast.success("Vendor updated successfully");
+        const payload: Partial<{
+          name: string;
+          email: string;
+          password: string;
+          role: string | null;
+        }> = { name, email, role: roleRaw };
+        if (password.trim().length > 0) {
+          payload.password = password;
+        }
+        await updateUser(initial.id as string, payload);
+        toast.success("User updated successfully");
       } else {
-        await createVendor({
-          title,
+        await createUser({
           name,
-          description: description || undefined
+          email,
+          password,
+          role: roleRaw || null
         });
-        toast.success("Vendor created successfully");
+        toast.success("User created successfully");
       }
       form.reset();
       router.refresh();
       onSuccessClose?.();
     } catch (err) {
       const message =
-        (err as { message?: string })?.message ?? "Failed to create";
+        (err as { message?: string })?.message ?? "Failed to submit";
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -66,17 +73,6 @@ export default function VendorForm({
       <FieldGroup>
         <FieldSet>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
-              <Input
-                id="title"
-                name="title"
-                placeholder="Input Title here"
-                defaultValue={initial?.title ? String(initial.title) : ""}
-                disabled={isView}
-                required
-              />
-            </Field>
             <Field>
               <FieldLabel htmlFor="name">Name</FieldLabel>
               <Input
@@ -89,14 +85,40 @@ export default function VendorForm({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="description-1">Description</FieldLabel>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
-                id="description-1"
-                name="description"
-                placeholder="Input Description here"
-                defaultValue={
-                  initial?.description ? String(initial.description) : ""
-                }
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Input Email here"
+                defaultValue={initial?.email ? String(initial.email) : ""}
+                disabled={isView}
+                required
+              />
+            </Field>
+            {!isView && (
+              <Field>
+                <FieldLabel htmlFor="password">
+                  {isEdit ? "New Password (optional)" : "Password"}
+                </FieldLabel>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder={
+                    isEdit ? "Leave blank to keep current" : "Input Password"
+                  }
+                  required={!isEdit}
+                />
+              </Field>
+            )}
+            <Field>
+              <FieldLabel htmlFor="role">Role</FieldLabel>
+              <Input
+                id="role"
+                name="role"
+                placeholder="Input Role here (optional)"
+                defaultValue={initial?.role != null ? String(initial.role) : ""}
                 disabled={isView}
               />
             </Field>
