@@ -7,10 +7,10 @@ import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { createDocumentType } from "@/services/document-type";
+import { createSender } from "@/services/sender";
 import { toast } from "sonner";
 
-export default function DocumentTypeForm({
+export default function SenderForm({
   onSuccessClose
 }: {
   onSuccessClose?: () => void;
@@ -23,18 +23,18 @@ export default function DocumentTypeForm({
     if (submitting) return;
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const title = String(fd.get("title") ?? "").trim();
+    const name = String(fd.get("name") ?? "").trim();
     const description = String(fd.get("description") ?? "").trim();
     try {
       setSubmitting(true);
-      await createDocumentType({
-        title,
+      await createSender({
+        name,
         description: description || undefined
       });
       form.reset();
       router.refresh();
       onSuccessClose?.();
-      toast.success("Document type created successfully");
+      toast.success("Sender created successfully");
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";
@@ -49,11 +49,11 @@ export default function DocumentTypeForm({
         <FieldSet>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name-1">Title</FieldLabel>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
               <Input
-                id="title"
-                name="title"
-                placeholder="Input Title here"
+                id="name"
+                name="name"
+                placeholder="Input Name here"
                 required
               />
             </Field>

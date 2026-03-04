@@ -7,10 +7,10 @@ import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { createDocumentType } from "@/services/document-type";
+import { createVendor } from "@/services/vendor";
 import { toast } from "sonner";
 
-export default function DocumentTypeForm({
+export default function VendorForm({
   onSuccessClose
 }: {
   onSuccessClose?: () => void;
@@ -24,17 +24,19 @@ export default function DocumentTypeForm({
     const form = e.currentTarget;
     const fd = new FormData(form);
     const title = String(fd.get("title") ?? "").trim();
+    const name = String(fd.get("name") ?? "").trim();
     const description = String(fd.get("description") ?? "").trim();
     try {
       setSubmitting(true);
-      await createDocumentType({
+      await createVendor({
         title,
+        name,
         description: description || undefined
       });
       form.reset();
       router.refresh();
       onSuccessClose?.();
-      toast.success("Document type created successfully");
+      toast.success("Vendor created successfully");
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";
@@ -49,11 +51,20 @@ export default function DocumentTypeForm({
         <FieldSet>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name-1">Title</FieldLabel>
+              <FieldLabel htmlFor="title">Title</FieldLabel>
               <Input
                 id="title"
                 name="title"
                 placeholder="Input Title here"
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Input Name here"
                 required
               />
             </Field>

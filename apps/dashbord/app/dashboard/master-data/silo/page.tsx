@@ -1,10 +1,10 @@
-import DocumentTypeForm from "@/components/form/document-type";
 import { FormDialog } from "@/components/form/form-dialog";
 import DataTable from "@/components/table/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { columns } from "@/components/table/silo";
 import { getSilos, type Silo } from "@/services/silo";
+import SiloForm from "@/components/form/silo";
 
 export default async function page() {
   let data: Silo[] = [];
@@ -26,7 +26,7 @@ export default async function page() {
           <FormDialog
             title="Add New Silo"
             description="Add a new silo for incoming documents."
-            formFields={<DocumentTypeForm />}
+            formFields={<SiloForm />}
             trigger={<Button className="mt-4">Add New</Button>}
           />
         </div>

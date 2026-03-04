@@ -1,10 +1,10 @@
-import DocumentTypeForm from "@/components/form/document-type";
 import { FormDialog } from "@/components/form/form-dialog";
 import DataTable from "@/components/table/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { columns } from "@/components/table/bank";
 import { getBanks, type Bank } from "@/services/bank";
+import BankForm from "@/components/form/bank";
 
 export default async function page() {
   let data: Bank[] = [];
@@ -26,7 +26,7 @@ export default async function page() {
           <FormDialog
             title="Add New Bank"
             description="Add a new bank for incoming documents."
-            formFields={<DocumentTypeForm />}
+            formFields={<BankForm />}
             trigger={<Button className="mt-4">Add New</Button>}
           />
         </div>

@@ -5,6 +5,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { usePathname } from "next/navigation";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LayoutDashboard from "./dashboard/layout-dashboard";
+import { Toaster } from "@/components/ui/sonner";
 
 export function ThemeProvider({
   children,
@@ -27,6 +28,7 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
         <TooltipProvider>
           {isLogin ? children : <LayoutDashboard>{children}</LayoutDashboard>}
         </TooltipProvider>
+        <Toaster />
       </ThemeProvider>
     </>
   );

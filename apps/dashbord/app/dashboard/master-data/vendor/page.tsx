@@ -1,10 +1,10 @@
-import DocumentTypeForm from "@/components/form/document-type";
 import { FormDialog } from "@/components/form/form-dialog";
 import DataTable from "@/components/table/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { columns } from "@/components/table/vendor";
 import { getVendors, type Vendor } from "@/services/vendor";
+import VendorForm from "@/components/form/vendor";
 
 export default async function page() {
   let data: Vendor[] = [];
@@ -26,7 +26,7 @@ export default async function page() {
           <FormDialog
             title="Add New Vendor"
             description="Add a new vendor for incoming documents."
-            formFields={<DocumentTypeForm />}
+            formFields={<VendorForm />}
             trigger={<Button className="mt-4">Add New</Button>}
           />
         </div>

@@ -7,10 +7,10 @@ import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { createDocumentType } from "@/services/document-type";
+import { createBank } from "@/services/bank";
 import { toast } from "sonner";
 
-export default function DocumentTypeForm({
+export default function BankForm({
   onSuccessClose
 }: {
   onSuccessClose?: () => void;
@@ -27,14 +27,14 @@ export default function DocumentTypeForm({
     const description = String(fd.get("description") ?? "").trim();
     try {
       setSubmitting(true);
-      await createDocumentType({
+      await createBank({
         title,
         description: description || undefined
       });
       form.reset();
       router.refresh();
       onSuccessClose?.();
-      toast.success("Document type created successfully");
+      toast.success("Bank created successfully");
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";
@@ -49,7 +49,7 @@ export default function DocumentTypeForm({
         <FieldSet>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name-1">Title</FieldLabel>
+              <FieldLabel htmlFor="title">Title</FieldLabel>
               <Input
                 id="title"
                 name="title"
