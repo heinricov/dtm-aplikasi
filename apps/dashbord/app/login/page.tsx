@@ -1,13 +1,54 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { login } from "@/services/auth";
+import { toast } from "sonner";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (submitting) return;
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const email = String(fd.get("email") ?? "").trim();
+    const password = String(fd.get("pwd") ?? "").trim();
+    try {
+      setSubmitting(true);
+      const res = await login({ email, password });
+      try {
+        localStorage.setItem("dtm_user", JSON.stringify(res.user));
+      } catch {
+        // ignore localStorage errors
+      }
+      try {
+        document.cookie = `access_token=${encodeURIComponent(
+          res.token
+        )}; Path=/; SameSite=Lax`;
+      } catch {
+        // ignore client cookie errors
+      }
+      toast.success("Signed in successfully");
+      router.push("/dashboard");
+    } catch (err) {
+      const message =
+        (err as { message?: string })?.message ?? "Failed to sign in";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
-        action=""
+        onSubmit={onSubmit}
         className="bg-card m-auto h-fit w-full max-w-sm rounded-[calc(var(--radius)+.125rem)] border p-0.5 shadow-md dark:[--color-muted:var(--color-zinc-900)]"
       >
         <div className="p-8 pb-6">
@@ -49,7 +90,9 @@ export default function LoginPage() {
               />
             </div>
 
-            <Button className="w-full">Sign In</Button>
+            <Button className="w-full" type="submit" disabled={submitting}>
+              {submitting ? "Signing In..." : "Sign In"}
+            </Button>
           </div>
         </div>
 

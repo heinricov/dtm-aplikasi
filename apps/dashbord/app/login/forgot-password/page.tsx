@@ -1,13 +1,42 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useState } from "react";
+import { forgotPassword } from "@/services/auth";
+import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
+  const [submitting, setSubmitting] = useState(false);
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (submitting) return;
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const email = String(fd.get("email") ?? "").trim();
+    try {
+      setSubmitting(true);
+      const res = await forgotPassword({ email });
+      const msg = res.exists
+        ? "Reset link sent if the email exists"
+        : "If the email exists, a reset link was sent";
+      toast.success(msg);
+      form.reset();
+    } catch (err) {
+      const message =
+        (err as { message?: string })?.message ?? "Failed to request reset";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
-        action=""
+        onSubmit={onSubmit}
         className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]"
       >
         <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
@@ -20,18 +49,6 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-6 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="block text-sm">
-                Name
-              </Label>
-              <Input
-                type="text"
-                required
-                name="name"
-                id="name"
-                placeholder="John Doe"
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
                 Email
               </Label>
@@ -43,32 +60,10 @@ export default function ForgotPasswordPage() {
                 placeholder="name@example.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword" className="block text-sm">
-                New Password
-              </Label>
-              <Input
-                type="password"
-                required
-                name="newPassword"
-                id="newPassword"
-                placeholder="New Password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmNewPassword" className="block text-sm">
-                Confirm New Password
-              </Label>
-              <Input
-                type="password"
-                required
-                name="confirmNewPassword"
-                id="confirmNewPassword"
-                placeholder="Confirm New Password"
-              />
-            </div>
 
-            <Button className="w-full">Create New Password</Button>
+            <Button className="w-full" type="submit" disabled={submitting}>
+              {submitting ? "Submitting..." : "Send Reset Link"}
+            </Button>
           </div>
 
           <div className="mt-6 text-center">

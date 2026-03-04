@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,15 +20,95 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { IconHelpCircle, IconSettings, IconUser } from "@tabler/icons-react";
-
-const userData = {
-  name: "heinricov",
-  email: "heinricov.diego@computradetech.com",
-  avatar: "/avatars/shadcn.jpg"
-};
+import { logout } from "@/services/auth";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { getUserById } from "@/services/user";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
+  const [userData, setUserData] = useState<{
+    name: string;
+    email: string;
+    avatar?: string;
+  }>({
+    name: "User",
+    email: "user@example.com",
+    avatar: "/avatars/shadcn.jpg"
+  });
+  useEffect(() => {
+    try {
+      const raw =
+        typeof window !== "undefined" ? localStorage.getItem("dtm_user") : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { name?: string; email?: string };
+        setUserData((prev) => ({
+          ...prev,
+          name: parsed?.name ?? prev.name,
+          email: parsed?.email ?? prev.email
+        }));
+        return;
+      }
+      if (typeof document !== "undefined") {
+        const cookie = document.cookie
+          .split(";")
+          .map((s) => s.trim())
+          .find((c) => c.startsWith("access_token="));
+        const token = cookie?.split("=")[1];
+        if (token) {
+          try {
+            const parts = token.split(".");
+            if (parts.length === 3) {
+              const payloadStr = atob(parts[1]);
+              const payload = JSON.parse(payloadStr) as {
+                sub?: string;
+                email?: string;
+              };
+              if (payload?.sub) {
+                getUserById(payload.sub).then((u) => {
+                  if (u) {
+                    setUserData((prev) => ({
+                      ...prev,
+                      name: String(u.name ?? prev.name),
+                      email: String(u.email ?? prev.email)
+                    }));
+                    try {
+                      localStorage.setItem(
+                        "dtm_user",
+                        JSON.stringify({ name: u.name, email: u.email })
+                      );
+                    } catch {}
+                  }
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+  const router = useRouter();
+
+  async function onLogout() {
+    try {
+      await logout();
+      try {
+        document.cookie =
+          "access_token=; Path=/; Max-Age=0; SameSite=Lax; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem("dtm_user");
+      } catch {
+        // ignore client cookie errors
+      }
+      toast.success("Logged out");
+      router.push("/login");
+    } catch (err) {
+      const message =
+        (err as { message?: string })?.message ?? "Failed to logout";
+      toast.error(message);
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -85,7 +166,12 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                onLogout();
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>
