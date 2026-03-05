@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "./generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -78,9 +77,11 @@ model IncomingDocument {
   id                    String   @id @default(uuid()) @db.Uuid
   user_id               String   @db.Uuid
   document_receipt_date DateTime @db.Date
+  title                 String?  @db.VarChar(150)   // baru
   document_type_id      String   @db.Uuid
   sender_id             String   @db.Uuid
   qty                   Int?
+  note                  String?  @db.VarChar(255)   // baru
   description           String?  @db.VarChar(255)
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt

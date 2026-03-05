@@ -19,8 +19,13 @@ export const dataMenus = {
       icon: IconDashboard
     },
     {
+      title: "Incoming Document",
+      url: "/dashboard/incoming-document",
+      icon: IconCloudComputing
+    },
+    {
       title: "Report",
-      url: "/report",
+      url: "/dashboard/report",
       icon: IconReport
     }
   ],

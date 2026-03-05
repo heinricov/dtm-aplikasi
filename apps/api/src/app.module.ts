@@ -8,6 +8,7 @@ import { BankModule } from './modules/bank/bank.module';
 import { SenderModule } from './modules/sender/sender.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { IncomingDocumentModule } from './modules/incoming-document/incoming-document.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
     SenderModule,
     UserModule,
     AuthModule,
+    IncomingDocumentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

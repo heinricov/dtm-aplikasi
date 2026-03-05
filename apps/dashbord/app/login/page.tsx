@@ -8,10 +8,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { login } from "@/services/auth";
 import { toast } from "sonner";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput
+} from "@/components/ui/input-group";
+import { EyeIcon, EyeOffIcon, LockIcon } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,7 +74,7 @@ export default function LoginPage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
-                Username
+                Email
               </Label>
               <Input type="email" required name="email" id="email" />
             </div>
@@ -81,13 +93,28 @@ export default function LoginPage() {
                   </Link>
                 </Button>
               </div>
-              <Input
-                type="password"
-                required
-                name="pwd"
-                id="pwd"
-                className="input sz-md variant-mixed"
-              />
+              <InputGroup>
+                <InputGroupAddon>
+                  <LockIcon className="text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  className="border-0 shadow-none focus-visible:ring-0"
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  name="pwd"
+                  id="pwd"
+                />
+
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton onClick={togglePasswordVisibility}>
+                    {showPassword ? (
+                      <EyeOffIcon className="size-4 text-muted-foreground" />
+                    ) : (
+                      <EyeIcon className="size-4 text-muted-foreground" />
+                    )}
+                  </InputGroupButton>
+                </InputGroupAddon>
+              </InputGroup>
             </div>
 
             <Button className="w-full" type="submit" disabled={submitting}>
