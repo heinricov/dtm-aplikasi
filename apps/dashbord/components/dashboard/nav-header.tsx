@@ -1,3 +1,6 @@
+"use client";
+
+import { Fragment } from "react";
 import { SidebarTrigger } from "../ui/sidebar";
 import { Separator } from "../ui/separator";
 import {
@@ -9,10 +12,21 @@ import {
   BreadcrumbSeparator
 } from "../ui/breadcrumb";
 import { ButtonTheme } from "./button-theme";
+import { usePathname } from "next/navigation";
 
 export default function NavHeader() {
+  const pathname = usePathname();
+  const segs = (pathname || "/").split("/").filter(Boolean);
+  const baseIndex = segs[0] === "dashboard" ? 1 : 0;
+  const trail = segs.slice(baseIndex);
+  const toTitle = (s: string) =>
+    decodeURIComponent(s)
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  const baseHref = segs[0] === "dashboard" ? "/dashboard" : "/";
+  let acc = baseHref;
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+    <header className="sticky top-0 z-50 flex h-17 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur transition-[width,height] ease-linear supports-backdrop-filter:bg-background/60 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator
@@ -22,12 +36,32 @@ export default function NavHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Build Your Application</BreadcrumbLink>
+              <BreadcrumbLink href={baseHref}>
+                {segs[0] === "dashboard" ? "Dashboard" : "Home"}
+              </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-            </BreadcrumbItem>
+            {trail.length > 0 && (
+              <BreadcrumbSeparator className="hidden md:block" />
+            )}
+            {trail.map((seg, i) => {
+              const isLast = i === trail.length - 1;
+              acc = `${acc}/${seg}`;
+              if (isLast) {
+                return (
+                  <BreadcrumbItem key={acc}>
+                    <BreadcrumbPage>{toTitle(seg)}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                );
+              }
+              return (
+                <Fragment key={`${acc}-group`}>
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink href={acc}>{toTitle(seg)}</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden md:block" />
+                </Fragment>
+              );
+            })}
           </BreadcrumbList>
         </Breadcrumb>
       </div>

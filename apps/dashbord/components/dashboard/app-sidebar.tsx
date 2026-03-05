@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavMenus } from "./nav-menu";
 import { dataMenus } from "./data-menu";
+import { SelectSeparator } from "../ui/select";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -22,11 +23,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <DashboardBrand brand={dataMenus.brand} />
       </SidebarHeader>
+      <SelectSeparator />
       <SidebarContent>
         <NavMenus items={dataMenus.menus} />
         <NavCollaps title="Data" items={dataMenus.menuData} />
         <NavMain title="Documents" items={dataMenus.documents} />
       </SidebarContent>
+      <SelectSeparator />
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
