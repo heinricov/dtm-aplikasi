@@ -34,32 +34,60 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-    if (!user) {
-      throw new UnauthorizedException('Email atau password salah');
-    }
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) {
-      throw new UnauthorizedException('Email atau password salah');
-    }
-    const u = user as unknown as {
+    type SafeUser = {
       id: string;
       name: string;
       email: string;
       role: string | null;
+      password: string;
       created_at: Date;
       updated_at: Date;
     };
-    const expiresIn = this.getJwtExpiresIn();
+    const findUniqueUserFull = (
+      this.prisma as unknown as {
+        user: { findUnique: (args: unknown) => Promise<unknown> };
+      }
+    ).user.findUnique as unknown as (args: {
+      where: { email: string };
+      select: Record<string, boolean>;
+    }) => Promise<SafeUser | null>;
+    const user = await findUniqueUserFull({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        password: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Email atau password salah');
+    }
+    const ok = await bcrypt.compare(String(password), String(user.password));
+    if (!ok) {
+      throw new UnauthorizedException('Email atau password salah');
+    }
+    const u = user;
+    const expiresIn: string = this.getJwtExpiresIn();
     const signOptions: SignOptions = { expiresIn };
     const payload: { sub: string; email: string; role: string | null } = {
       sub: u.id,
       email: u.email,
       role: u.role,
     };
-    const token = jwtSign(payload, this.getJwtSecret(), signOptions) as string;
+    const signJwt: (
+      payload: { sub: string; email: string; role: string | null },
+      secret: string,
+      options: SignOptions,
+    ) => string = jwtSign as unknown as (
+      payload: { sub: string; email: string; role: string | null },
+      secret: string,
+      options: SignOptions,
+    ) => string;
+    const token = String(signJwt(payload, this.getJwtSecret(), signOptions));
     const maxAgeMs = this.parseExpiresToMs(expiresIn);
     return {
       token,
@@ -79,7 +107,15 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    const user = await this.prisma.user.findUnique({
+    const findUniqueUserIdOnly = (
+      this.prisma as unknown as {
+        user: { findUnique: (args: unknown) => Promise<unknown> };
+      }
+    ).user.findUnique as unknown as (args: {
+      where: { email: string };
+      select: Record<string, boolean>;
+    }) => Promise<{ id: string } | null>;
+    const user = await findUniqueUserIdOnly({
       where: { email },
       select: { id: true },
     });
