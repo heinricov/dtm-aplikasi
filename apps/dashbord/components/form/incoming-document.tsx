@@ -1,14 +1,9 @@
 "use client";
+import * as React from "react";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSet
-} from "../ui/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
@@ -29,6 +24,9 @@ import {
 } from "../ui/select";
 import { getDocumentTypes, type DocumentType } from "@/services/document-type";
 import { getSenders, type Sender } from "@/services/sender";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 export default function IncomingDocumentForm({
   onSuccessClose,
@@ -51,9 +49,26 @@ export default function IncomingDocumentForm({
   const [senderId, setSenderId] = useState(
     initial?.sender_id ? String(initial.sender_id) : ""
   );
+  const [receiptDate, setReceiptDate] = useState(
+    initial?.document_receipt_date
+      ? String(initial.document_receipt_date).slice(0, 10)
+      : ""
+  );
+  const [titleValue, setTitleValue] = useState(
+    initial?.title ? String(initial.title) : ""
+  );
   const [userId, setUserId] = useState(
     initial?.user_id ? String(initial.user_id) : ""
   );
+  const [section, setSection] = useState<
+    "form" | "next" | "invoice" | "pl" | "do"
+  >("form");
+  const nextDisabled =
+    isView ||
+    receiptDate.trim() === "" ||
+    titleValue.trim() === "" ||
+    documentTypeId.trim() === "" ||
+    senderId.trim() === "";
 
   useEffect(() => {
     let mounted = true;
@@ -147,142 +162,467 @@ export default function IncomingDocumentForm({
   }
   return (
     <form onSubmit={onSubmit}>
-      <FieldGroup className="">
-        <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="document_receipt_date">
-              Receipt Date
-            </FieldLabel>
-            <Input
-              id="document_receipt_date"
-              name="document_receipt_date"
-              type="date"
-              placeholder="YYYY-MM-DD"
-              defaultValue={
-                initial?.document_receipt_date
-                  ? String(initial.document_receipt_date).slice(0, 10)
-                  : ""
-              }
-              disabled={isView}
-              required
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="title">Title</FieldLabel>
-            <Input
-              id="title"
-              name="title"
-              placeholder="Title"
-              defaultValue={initial?.title ? String(initial.title) : ""}
-              disabled={isView}
-            />
-          </Field>
-          <Field className="hidden">
-            <FieldLabel htmlFor="user_id">User</FieldLabel>
-            <Input
-              id="user_id"
-              name="user_id"
-              placeholder="User ID"
-              value={userId}
-              readOnly
-              required
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="document_type_id">Document Type</FieldLabel>
-            <Select value={documentTypeId} onValueChange={setDocumentTypeId}>
-              <SelectTrigger disabled={isView}>
-                <SelectValue placeholder="Choose document type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {docTypes.map((dt) => (
-                    <SelectItem key={dt.id} value={dt.id}>
-                      {dt.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldDescription>
-              Select document type for this incoming document.
-            </FieldDescription>
-            <input
-              type="hidden"
-              name="document_type_id"
-              value={documentTypeId}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
-            <Select value={senderId} onValueChange={setSenderId}>
-              <SelectTrigger disabled={isView}>
-                <SelectValue placeholder="Choose sender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {senders.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldDescription>
-              Select the sender for this document.
-            </FieldDescription>
-            <input type="hidden" name="sender_id" value={senderId} />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="qty">Quantity</FieldLabel>
-            <Input
-              id="qty"
-              name="qty"
-              type="number"
-              placeholder="Quantity"
-              defaultValue={
-                typeof initial?.qty === "number" ? String(initial.qty) : ""
-              }
-              disabled={isView}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="note">Note</FieldLabel>
-            <Input
-              id="note"
-              name="note"
-              placeholder="Note"
-              defaultValue={initial?.note ? String(initial.note) : ""}
-              disabled={isView}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <Input
-              id="description"
-              name="description"
-              placeholder="Description"
-              defaultValue={
-                initial?.description ? String(initial.description) : ""
-              }
-              disabled={isView}
-            />
-          </Field>
-        </div>
-      </FieldGroup>
+      {section === "form" && (
+        <IncomingDocumentFields
+          initial={initial}
+          isView={isView}
+          docTypes={docTypes}
+          documentTypeId={documentTypeId}
+          setDocumentTypeId={setDocumentTypeId}
+          senders={senders}
+          senderId={senderId}
+          setSenderId={setSenderId}
+          userId={userId}
+          setReceiptDate={setReceiptDate}
+          setTitleValue={setTitleValue}
+        />
+      )}
+      {section === "next" && (
+        <NextPageButton
+          onInvoice={() => setSection("invoice")}
+          onPl={() => setSection("pl")}
+          onDo={() => setSection("do")}
+        />
+      )}
+      {section === "invoice" && <InvoiceField />}
+      {section === "pl" && <PlField />}
+      {section === "do" && <DoField />}
       <Separator className="my-4" />
       <DialogFooter className="flex justify-end px-4">
         <DialogClose asChild>
           <Button variant="outline">{isView ? "Close" : "Cancel"}</Button>
         </DialogClose>
-        {!isView && (
+        {!isView && section !== "form" && (
           <Button type="submit" disabled={submitting}>
             {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
           </Button>
         )}
+        {section === "form" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSection("next")}
+            disabled={nextDisabled}
+          >
+            Next
+          </Button>
+        )}
       </DialogFooter>
     </form>
+  );
+}
+
+export function IncomingDocumentFields({
+  initial,
+  isView,
+  docTypes,
+  documentTypeId,
+  setDocumentTypeId,
+  senders,
+  senderId,
+  setSenderId,
+  userId,
+  setReceiptDate,
+  setTitleValue
+}: {
+  initial?: Partial<IncomingDocument> & { id?: string };
+  isView: boolean;
+  docTypes: DocumentType[];
+  documentTypeId: string;
+  setDocumentTypeId: (value: string) => void;
+  senders: Sender[];
+  senderId: string;
+  setSenderId: (value: string) => void;
+  userId: string;
+  setReceiptDate: (value: string) => void;
+  setTitleValue: (value: string) => void;
+}) {
+  return (
+    <FieldGroup className="">
+      <div className="grid grid-cols-2 gap-4">
+        <Field>
+          <FieldLabel htmlFor="document_receipt_date">Receipt Date</FieldLabel>
+          <Input
+            id="document_receipt_date"
+            name="document_receipt_date"
+            type="date"
+            placeholder="YYYY-MM-DD"
+            defaultValue={
+              initial?.document_receipt_date
+                ? String(initial.document_receipt_date).slice(0, 10)
+                : ""
+            }
+            disabled={isView}
+            required
+            onChange={(e) => setReceiptDate(e.currentTarget.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="title">Title</FieldLabel>
+          <Input
+            id="title"
+            name="title"
+            placeholder="Title"
+            defaultValue={initial?.title ? String(initial.title) : ""}
+            disabled={isView}
+            onChange={(e) => setTitleValue(e.currentTarget.value)}
+          />
+        </Field>
+        <Field className="hidden">
+          <FieldLabel htmlFor="user_id">User</FieldLabel>
+          <Input
+            id="user_id"
+            name="user_id"
+            placeholder="User ID"
+            value={userId}
+            readOnly
+            required
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="document_type_id">Document Type</FieldLabel>
+          <Select value={documentTypeId} onValueChange={setDocumentTypeId}>
+            <SelectTrigger disabled={isView}>
+              <SelectValue placeholder="Choose document type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {docTypes.map((dt) => (
+                  <SelectItem key={dt.id} value={dt.id}>
+                    {dt.title}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <FieldDescription>
+            Select document type for this incoming document.
+          </FieldDescription>
+          <input type="hidden" name="document_type_id" value={documentTypeId} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
+          <Select value={senderId} onValueChange={setSenderId}>
+            <SelectTrigger disabled={isView}>
+              <SelectValue placeholder="Choose sender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {senders.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <FieldDescription>
+            Select the sender for this document.
+          </FieldDescription>
+          <input type="hidden" name="sender_id" value={senderId} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="qty">Quantity</FieldLabel>
+          <Input
+            id="qty"
+            name="qty"
+            type="number"
+            placeholder="Quantity"
+            defaultValue={
+              typeof initial?.qty === "number" ? String(initial.qty) : ""
+            }
+            disabled={isView}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="note">Note</FieldLabel>
+          <Input
+            id="note"
+            name="note"
+            placeholder="Note"
+            defaultValue={initial?.note ? String(initial.note) : ""}
+            disabled={isView}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="description">Description</FieldLabel>
+          <Input
+            id="description"
+            name="description"
+            placeholder="Description"
+            defaultValue={
+              initial?.description ? String(initial.description) : ""
+            }
+            disabled={isView}
+          />
+        </Field>
+      </div>
+    </FieldGroup>
+  );
+}
+
+export function NextPageButton({
+  onInvoice,
+  onPl,
+  onDo
+}: {
+  onInvoice: () => void;
+  onPl: () => void;
+  onDo: () => void;
+}) {
+  return (
+    <>
+      <div className="flex flex-col items-center justify-center gap-4">
+        <Button variant="outline" className="w-64" onClick={onInvoice}>
+          INVOICE
+        </Button>
+        <Button variant="outline" className="w-64" onClick={onDo}>
+          Delivery Order
+        </Button>
+        <Button variant="outline" className="w-64" onClick={onPl}>
+          Packing List
+        </Button>
+      </div>
+    </>
+  );
+}
+
+export function InvoiceField() {
+  const [date, setDate] = React.useState<Date>();
+  return (
+    <FieldGroup>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">BPT</SelectItem>
+              <SelectItem value="2025">CTI</SelectItem>
+              <SelectItem value="2026">CDT</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">PT Indra</SelectItem>
+              <SelectItem value="2025">PT Advance</SelectItem>
+              <SelectItem value="2026">PT Prima</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+          Invoice Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-name-43j"
+          placeholder="Evil Rabbit"
+          required
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+          PO Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-number-uw1"
+          placeholder="1234 5678 9012 3456"
+          required
+        />
+      </Field>
+      <Field className="mx-auto w-44">
+        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="date-picker-simple"
+              className="justify-start font-normal"
+            >
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              defaultMonth={date}
+            />
+          </PopoverContent>
+        </Popover>
+      </Field>
+    </FieldGroup>
+  );
+}
+
+export function PlField() {
+  const [date, setDate] = React.useState<Date>();
+  return (
+    <FieldGroup>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">BPT</SelectItem>
+              <SelectItem value="2025">CTI</SelectItem>
+              <SelectItem value="2026">CDT</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">PT Indra</SelectItem>
+              <SelectItem value="2025">PT Advance</SelectItem>
+              <SelectItem value="2026">PT Prima</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+          Invoice Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-name-43j"
+          placeholder="Evil Rabbit"
+          required
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+          PO Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-number-uw1"
+          placeholder="1234 5678 9012 3456"
+          required
+        />
+      </Field>
+      <Field className="mx-auto w-44">
+        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="date-picker-simple"
+              className="justify-start font-normal"
+            >
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              defaultMonth={date}
+            />
+          </PopoverContent>
+        </Popover>
+      </Field>
+    </FieldGroup>
+  );
+}
+
+export function DoField() {
+  const [date, setDate] = React.useState<Date>();
+  return (
+    <FieldGroup>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">BPT</SelectItem>
+              <SelectItem value="2025">CTI</SelectItem>
+              <SelectItem value="2026">CDT</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
+        <Select defaultValue="">
+          <SelectTrigger id="checkout-7j9-exp-year-f59">
+            <SelectValue placeholder="YYYY" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="2024">PT Indra</SelectItem>
+              <SelectItem value="2025">PT Advance</SelectItem>
+              <SelectItem value="2026">PT Prima</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+          Invoice Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-name-43j"
+          placeholder="Evil Rabbit"
+          required
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+          PO Number
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-number-uw1"
+          placeholder="1234 5678 9012 3456"
+          required
+        />
+      </Field>
+      <Field className="mx-auto w-44">
+        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="date-picker-simple"
+              className="justify-start font-normal"
+            >
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              defaultMonth={date}
+            />
+          </PopoverContent>
+        </Popover>
+      </Field>
+    </FieldGroup>
   );
 }

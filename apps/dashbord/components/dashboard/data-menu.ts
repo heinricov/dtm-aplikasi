@@ -111,22 +111,22 @@ export const dataMenus = {
   documents: [
     {
       name: "Invoice",
-      url: "#",
+      url: "/dashboard/receipt/invoice",
       icon: FileIcon
     },
     {
       name: "Delivery Order",
-      url: "#",
+      url: "/dashboard/receipt/do",
       icon: FileIcon
     },
     {
       name: "Packing List",
-      url: "#",
+      url: "/dashboard/receipt/pl",
       icon: FileIcon
     },
     {
       name: "Voucher Payment",
-      url: "#",
+      url: "/dashboard/receipt/vp",
       icon: FileIcon
     }
   ]

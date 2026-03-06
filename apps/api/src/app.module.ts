@@ -9,6 +9,7 @@ import { SenderModule } from './modules/sender/sender.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { IncomingDocumentModule } from './modules/incoming-document/incoming-document.module';
+import { ReceiptInvoiceModule } from './modules/receipt-invoice/receipt-invoice.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { IncomingDocumentModule } from './modules/incoming-document/incoming-doc
     UserModule,
     AuthModule,
     IncomingDocumentModule,
+    ReceiptInvoiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
