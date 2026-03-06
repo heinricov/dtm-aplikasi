@@ -26,7 +26,7 @@ export default function NavHeader() {
   const baseHref = segs[0] === "dashboard" ? "/dashboard" : "/";
   let acc = baseHref;
   return (
-    <header className="sticky top-0 z-50 flex h-17 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur transition-[width,height] ease-linear supports-backdrop-filter:bg-background/60 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+    <header className="sticky top-0 z-50 flex h-17 shrink-0 items-center gap-2 bg-background/80 backdrop-blur transition-[width,height] ease-linear supports-backdrop-filter:bg-background/60 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator

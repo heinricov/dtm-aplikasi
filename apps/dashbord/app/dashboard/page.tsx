@@ -1,12 +1,13 @@
+import { ChartDashboard } from "@/components/chart-dashboard";
+import TabsDashboard from "@/components/tabs-dashboard";
+
 export default function page() {
   return (
     <>
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
+      <div className="mb-5">
+        <ChartDashboard />
       </div>
-      <div className="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+      <TabsDashboard />
     </>
   );
 }
