@@ -124,7 +124,7 @@ export default function DataTable<TData>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="bg-accent">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
