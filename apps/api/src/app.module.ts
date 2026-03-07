@@ -10,6 +10,10 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { IncomingDocumentModule } from './modules/incoming-document/incoming-document.module';
 import { ReceiptInvoiceModule } from './modules/receipt-invoice/receipt-invoice.module';
+import { ReceiptDoModule } from './modules/receipt-do/receipt-do.module';
+import { ReceiptPlModule } from './modules/receipt-pl/receipt-pl.module';
+import { ReceiptVpModule } from './modules/receipt-vp/receipt-vp.module';
+import { ReceiptOtherDocModule } from './modules/receipt-other-doc/receipt-other-doc.module';
 
 @Module({
   imports: [
@@ -22,6 +26,10 @@ import { ReceiptInvoiceModule } from './modules/receipt-invoice/receipt-invoice.
     AuthModule,
     IncomingDocumentModule,
     ReceiptInvoiceModule,
+    ReceiptDoModule,
+    ReceiptPlModule,
+    ReceiptVpModule,
+    ReceiptOtherDocModule,
   ],
   controllers: [AppController],
   providers: [AppService],

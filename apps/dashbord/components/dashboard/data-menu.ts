@@ -4,13 +4,13 @@ import {
   IconListDetails,
   IconReport
 } from "@tabler/icons-react";
-import { BoxIcon, Frame, File as FileIcon } from "lucide-react";
+import { BoxIcon, Frame, File as FileIcon, BookText } from "lucide-react";
 
 export const dataMenus = {
   brand: {
     name: "DTM",
-    icon: Frame,
-    version: "1.0.0"
+    icon: BookText,
+    version: "Document Team Management"
   },
   menus: [
     {

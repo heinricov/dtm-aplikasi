@@ -3,7 +3,14 @@ import * as React from "react";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "../ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet
+} from "../ui/field";
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
 import { DialogClose, DialogFooter } from "../ui/dialog";
@@ -13,6 +20,9 @@ import {
   updateIncomingDocument,
   type IncomingDocument
 } from "@/services/incoming-document";
+import { createReceiptInvoice } from "@/services/receipt-invoice";
+import { createReceiptPl } from "@/services/receipt-pl";
+import { createReceiptDo } from "@/services/receipt-do";
 import { toast } from "sonner";
 import {
   Select,
@@ -57,12 +67,35 @@ export default function IncomingDocumentForm({
   const [titleValue, setTitleValue] = useState(
     initial?.title ? String(initial.title) : ""
   );
+  const [qtyValue, setQtyValue] = useState(
+    typeof initial?.qty === "number" ? String(initial.qty) : ""
+  );
+  const [noteValue, setNoteValue] = useState(
+    initial?.note ? String(initial.note) : ""
+  );
+  const [descriptionValue, setDescriptionValue] = useState(
+    initial?.description ? String(initial.description) : ""
+  );
   const [userId, setUserId] = useState(
     initial?.user_id ? String(initial.user_id) : ""
   );
   const [section, setSection] = useState<
     "form" | "next" | "invoice" | "pl" | "do"
   >("form");
+  const [invoiceSiloId, setInvoiceSiloId] = useState("");
+  const [invoiceVendorId, setInvoiceVendorId] = useState("");
+  const [invoiceNo, setInvoiceNo] = useState("");
+  const [invoicePo, setInvoicePo] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState<Date>();
+  const [plSiloId, setPlSiloId] = useState("");
+  const [plNo, setPlNo] = useState("");
+  const [plShipRef, setPlShipRef] = useState("");
+  const [plDate, setPlDate] = useState<Date>();
+  const [doSiloId, setDoSiloId] = useState("");
+  const [doVendorId, setDoVendorId] = useState("");
+  const [doNo, setDoNo] = useState("");
+  const [doPid, setDoPid] = useState("");
+  const [doDate, setDoDate] = useState<Date>();
   const nextDisabled =
     isView ||
     receiptDate.trim() === "" ||
@@ -109,23 +142,19 @@ export default function IncomingDocumentForm({
     e.preventDefault();
     if (submitting) return;
     if (isView) return;
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const user_id = String(fd.get("user_id") ?? "").trim();
-    const document_receipt_date = String(
-      fd.get("document_receipt_date") ?? ""
-    ).trim();
-    const document_type_id = String(fd.get("document_type_id") ?? "").trim();
-    const sender_id = String(fd.get("sender_id") ?? "").trim();
-    const qtyRaw = String(fd.get("qty") ?? "").trim();
-    const qty = qtyRaw ? Number(qtyRaw) : undefined;
-    const title = String(fd.get("title") ?? "").trim();
-    const note = String(fd.get("note") ?? "").trim();
-    const description = String(fd.get("description") ?? "").trim();
+    const user_id = userId.trim();
+    const document_receipt_date = receiptDate.trim();
+    const document_type_id = documentTypeId.trim();
+    const sender_id = senderId.trim();
+    const qty = qtyValue.trim() ? Number(qtyValue.trim()) : undefined;
+    const title = titleValue.trim();
+    const note = noteValue.trim();
+    const description = descriptionValue.trim();
     try {
       setSubmitting(true);
-      if (isEdit && initial?.id) {
-        await updateIncomingDocument(initial.id as string, {
+      let incomingId = initial?.id ? String(initial.id) : "";
+      if (isEdit && incomingId) {
+        await updateIncomingDocument(incomingId, {
           user_id,
           document_receipt_date,
           title,
@@ -135,9 +164,8 @@ export default function IncomingDocumentForm({
           note,
           description
         });
-        toast.success("Incoming document updated successfully");
       } else {
-        await createIncomingDocument({
+        const created = await createIncomingDocument({
           user_id,
           document_receipt_date,
           title: title || undefined,
@@ -147,9 +175,44 @@ export default function IncomingDocumentForm({
           note: note || undefined,
           description: description || undefined
         });
-        toast.success("Incoming document created successfully");
+        incomingId = String(created?.id ?? "");
       }
-      form.reset();
+      if (section === "invoice") {
+        await createReceiptInvoice({
+          incoming_document_id: incomingId,
+          silo_id: invoiceSiloId,
+          vendor_id: invoiceVendorId,
+          no_invoice: invoiceNo || undefined,
+          no_po: invoicePo || undefined,
+          scan_date: invoiceDate
+        });
+        toast.success("Receipt invoice created successfully");
+      } else if (section === "pl") {
+        await createReceiptPl({
+          incoming_document_id: incomingId,
+          silo_id: plSiloId,
+          no_pl: plNo,
+          ship_ref: plShipRef,
+          scan_date: plDate
+        });
+        toast.success("Receipt packing list created successfully");
+      } else if (section === "do") {
+        await createReceiptDo({
+          incoming_document_id: incomingId,
+          silo_id: doSiloId,
+          vendor_id: doVendorId,
+          no_do: doNo,
+          no_pid: doPid,
+          scan_date: doDate
+        });
+        toast.success("Receipt delivery order created successfully");
+      } else {
+        toast.success(
+          isEdit
+            ? "Incoming document updated successfully"
+            : "Incoming document created successfully"
+        );
+      }
       router.refresh();
       onSuccessClose?.();
     } catch (err) {
@@ -175,6 +238,9 @@ export default function IncomingDocumentForm({
           userId={userId}
           setReceiptDate={setReceiptDate}
           setTitleValue={setTitleValue}
+          setQtyValue={setQtyValue}
+          setNoteValue={setNoteValue}
+          setDescriptionValue={setDescriptionValue}
         />
       )}
       {section === "next" && (
@@ -184,17 +250,73 @@ export default function IncomingDocumentForm({
           onDo={() => setSection("do")}
         />
       )}
-      {section === "invoice" && <InvoiceField />}
-      {section === "pl" && <PlField />}
-      {section === "do" && <DoField />}
+      {section === "invoice" && (
+        <InvoiceField
+          siloId={invoiceSiloId}
+          setSiloId={setInvoiceSiloId}
+          vendorId={invoiceVendorId}
+          setVendorId={setInvoiceVendorId}
+          noInvoice={invoiceNo}
+          setNoInvoice={setInvoiceNo}
+          noPo={invoicePo}
+          setNoPo={setInvoicePo}
+          date={invoiceDate}
+          setDate={setInvoiceDate}
+        />
+      )}
+      {section === "pl" && (
+        <PlField
+          siloId={plSiloId}
+          setSiloId={setPlSiloId}
+          noPl={plNo}
+          setNoPl={setPlNo}
+          shipRef={plShipRef}
+          setShipRef={setPlShipRef}
+          date={plDate}
+          setDate={setPlDate}
+        />
+      )}
+      {section === "do" && (
+        <DoField
+          siloId={doSiloId}
+          setSiloId={setDoSiloId}
+          vendorId={doVendorId}
+          setVendorId={setDoVendorId}
+          noDo={doNo}
+          setNoDo={setDoNo}
+          noPid={doPid}
+          setNoPid={setDoPid}
+          date={doDate}
+          setDate={setDoDate}
+        />
+      )}
       <Separator className="my-4" />
       <DialogFooter className="flex justify-end px-4">
         <DialogClose asChild>
           <Button variant="outline">{isView ? "Close" : "Cancel"}</Button>
         </DialogClose>
-        {!isView && section !== "form" && (
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+        {!isView &&
+          (section === "invoice" || section === "pl" || section === "do") && (
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+            </Button>
+          )}
+        {(section === "invoice" || section === "pl" || section === "do") && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSection("next")}
+          >
+            Back
+          </Button>
+        )}
+        {section === "next" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSection("form")}
+          >
+            Back
           </Button>
         )}
         {section === "form" && (
@@ -223,7 +345,10 @@ export function IncomingDocumentFields({
   setSenderId,
   userId,
   setReceiptDate,
-  setTitleValue
+  setTitleValue,
+  setQtyValue,
+  setNoteValue,
+  setDescriptionValue
 }: {
   initial?: Partial<IncomingDocument> & { id?: string };
   isView: boolean;
@@ -236,6 +361,9 @@ export function IncomingDocumentFields({
   userId: string;
   setReceiptDate: (value: string) => void;
   setTitleValue: (value: string) => void;
+  setQtyValue: (value: string) => void;
+  setNoteValue: (value: string) => void;
+  setDescriptionValue: (value: string) => void;
 }) {
   return (
     <FieldGroup className="">
@@ -332,6 +460,7 @@ export function IncomingDocumentFields({
               typeof initial?.qty === "number" ? String(initial.qty) : ""
             }
             disabled={isView}
+            onChange={(e) => setQtyValue(e.currentTarget.value)}
           />
         </Field>
         <Field>
@@ -342,6 +471,7 @@ export function IncomingDocumentFields({
             placeholder="Note"
             defaultValue={initial?.note ? String(initial.note) : ""}
             disabled={isView}
+            onChange={(e) => setNoteValue(e.currentTarget.value)}
           />
         </Field>
         <Field>
@@ -354,6 +484,7 @@ export function IncomingDocumentFields({
               initial?.description ? String(initial.description) : ""
             }
             disabled={isView}
+            onChange={(e) => setDescriptionValue(e.currentTarget.value)}
           />
         </Field>
       </div>
@@ -387,13 +518,142 @@ export function NextPageButton({
   );
 }
 
-export function InvoiceField() {
-  const [date, setDate] = React.useState<Date>();
+export function InvoiceField({
+  siloId,
+  setSiloId,
+  vendorId,
+  setVendorId,
+  noInvoice,
+  setNoInvoice,
+  noPo,
+  setNoPo,
+  date,
+  setDate
+}: {
+  siloId: string;
+  setSiloId: (value: string) => void;
+  vendorId: string;
+  setVendorId: (value: string) => void;
+  noInvoice: string;
+  setNoInvoice: (value: string) => void;
+  noPo: string;
+  setNoPo: (value: string) => void;
+  date?: Date;
+  setDate: (value: Date | undefined) => void;
+}) {
+  return (
+    <FieldGroup className="mt-5">
+      <FieldSet>
+        <FieldLegend>Invoice Form</FieldLegend>
+        <FieldDescription>
+          Input incoming invoice document details here.
+        </FieldDescription>
+        <Separator />
+        <Field>
+          <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+          <Select value={siloId} onValueChange={setSiloId}>
+            <SelectTrigger id="checkout-7j9-exp-year-f59">
+              <SelectValue placeholder="YYYY" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="2024">BPT</SelectItem>
+                <SelectItem value="2025">CTI</SelectItem>
+                <SelectItem value="2026">CDT</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
+          <Select value={vendorId} onValueChange={setVendorId}>
+            <SelectTrigger id="checkout-7j9-exp-year-f59">
+              <SelectValue placeholder="YYYY" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="2024">PT Indra</SelectItem>
+                <SelectItem value="2025">PT Advance</SelectItem>
+                <SelectItem value="2026">PT Prima</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+            Invoice Number
+          </FieldLabel>
+          <Input
+            id="checkout-7j9-card-name-43j"
+            placeholder="Evil Rabbit"
+            required
+            value={noInvoice}
+            onChange={(e) => setNoInvoice(e.currentTarget.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+            PO Number
+          </FieldLabel>
+          <Input
+            id="checkout-7j9-card-number-uw1"
+            placeholder="1234 5678 9012 3456"
+            required
+            value={noPo}
+            onChange={(e) => setNoPo(e.currentTarget.value)}
+          />
+        </Field>
+        <Field className="">
+          <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                id="date-picker-simple"
+                className="justify-start font-normal"
+              >
+                {date ? format(date, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                defaultMonth={date}
+              />
+            </PopoverContent>
+          </Popover>
+        </Field>
+      </FieldSet>
+    </FieldGroup>
+  );
+}
+
+export function PlField({
+  siloId,
+  setSiloId,
+  noPl,
+  setNoPl,
+  shipRef,
+  setShipRef,
+  date,
+  setDate
+}: {
+  siloId: string;
+  setSiloId: (value: string) => void;
+  noPl: string;
+  setNoPl: (value: string) => void;
+  shipRef: string;
+  setShipRef: (value: string) => void;
+  date?: Date;
+  setDate: (value: Date | undefined) => void;
+}) {
   return (
     <FieldGroup>
       <Field>
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-        <Select defaultValue="">
+        <Select value={siloId} onValueChange={setSiloId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
             <SelectValue placeholder="YYYY" />
           </SelectTrigger>
@@ -407,21 +667,6 @@ export function InvoiceField() {
         </Select>
       </Field>
       <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-        <Select defaultValue="">
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="2024">PT Indra</SelectItem>
-              <SelectItem value="2025">PT Advance</SelectItem>
-              <SelectItem value="2026">PT Prima</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
         <FieldLabel htmlFor="checkout-7j9-card-name-43j">
           Invoice Number
         </FieldLabel>
@@ -429,6 +674,8 @@ export function InvoiceField() {
           id="checkout-7j9-card-name-43j"
           placeholder="Evil Rabbit"
           required
+          value={noPl}
+          onChange={(e) => setNoPl(e.currentTarget.value)}
         />
       </Field>
       <Field>
@@ -439,6 +686,8 @@ export function InvoiceField() {
           id="checkout-7j9-card-number-uw1"
           placeholder="1234 5678 9012 3456"
           required
+          value={shipRef}
+          onChange={(e) => setShipRef(e.currentTarget.value)}
         />
       </Field>
       <Field className="mx-auto w-44">
@@ -467,13 +716,34 @@ export function InvoiceField() {
   );
 }
 
-export function PlField() {
-  const [date, setDate] = React.useState<Date>();
+export function DoField({
+  siloId,
+  setSiloId,
+  vendorId,
+  setVendorId,
+  noDo,
+  setNoDo,
+  noPid,
+  setNoPid,
+  date,
+  setDate
+}: {
+  siloId: string;
+  setSiloId: (value: string) => void;
+  vendorId: string;
+  setVendorId: (value: string) => void;
+  noDo: string;
+  setNoDo: (value: string) => void;
+  noPid: string;
+  setNoPid: (value: string) => void;
+  date?: Date;
+  setDate: (value: Date | undefined) => void;
+}) {
   return (
     <FieldGroup>
       <Field>
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-        <Select defaultValue="">
+        <Select value={siloId} onValueChange={setSiloId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
             <SelectValue placeholder="YYYY" />
           </SelectTrigger>
@@ -488,7 +758,7 @@ export function PlField() {
       </Field>
       <Field>
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-        <Select defaultValue="">
+        <Select value={vendorId} onValueChange={setVendorId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
             <SelectValue placeholder="YYYY" />
           </SelectTrigger>
@@ -509,6 +779,8 @@ export function PlField() {
           id="checkout-7j9-card-name-43j"
           placeholder="Evil Rabbit"
           required
+          value={noDo}
+          onChange={(e) => setNoDo(e.currentTarget.value)}
         />
       </Field>
       <Field>
@@ -519,86 +791,8 @@ export function PlField() {
           id="checkout-7j9-card-number-uw1"
           placeholder="1234 5678 9012 3456"
           required
-        />
-      </Field>
-      <Field className="mx-auto w-44">
-        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              id="date-picker-simple"
-              className="justify-start font-normal"
-            >
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              defaultMonth={date}
-            />
-          </PopoverContent>
-        </Popover>
-      </Field>
-    </FieldGroup>
-  );
-}
-
-export function DoField() {
-  const [date, setDate] = React.useState<Date>();
-  return (
-    <FieldGroup>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-        <Select defaultValue="">
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="2024">BPT</SelectItem>
-              <SelectItem value="2025">CTI</SelectItem>
-              <SelectItem value="2026">CDT</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-        <Select defaultValue="">
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="2024">PT Indra</SelectItem>
-              <SelectItem value="2025">PT Advance</SelectItem>
-              <SelectItem value="2026">PT Prima</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-          Invoice Number
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-name-43j"
-          placeholder="Evil Rabbit"
-          required
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-          PO Number
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-number-uw1"
-          placeholder="1234 5678 9012 3456"
-          required
+          value={noPid}
+          onChange={(e) => setNoPid(e.currentTarget.value)}
         />
       </Field>
       <Field className="mx-auto w-44">
