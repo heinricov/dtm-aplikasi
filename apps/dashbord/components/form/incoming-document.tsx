@@ -34,6 +34,8 @@ import {
 } from "../ui/select";
 import { getDocumentTypes, type DocumentType } from "@/services/document-type";
 import { getSenders, type Sender } from "@/services/sender";
+import { getSilos, type Silo } from "@/services/silo";
+import { getVendors, type Vendor } from "@/services/vendor";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -59,6 +61,8 @@ export default function IncomingDocumentForm({
   const [senderId, setSenderId] = useState(
     initial?.sender_id ? String(initial.sender_id) : ""
   );
+  const [silos, setSilos] = useState<Silo[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [receiptDate, setReceiptDate] = useState(
     initial?.document_receipt_date
       ? String(initial.document_receipt_date).slice(0, 10)
@@ -117,6 +121,18 @@ export default function IncomingDocumentForm({
         if (mounted) setSenders(sList);
       } catch {
         if (mounted) setSenders([]);
+      }
+      try {
+        const siloList = await getSilos();
+        if (mounted) setSilos(siloList);
+      } catch {
+        if (mounted) setSilos([]);
+      }
+      try {
+        const vendorList = await getVendors();
+        if (mounted) setVendors(vendorList);
+      } catch {
+        if (mounted) setVendors([]);
       }
       try {
         const raw =
@@ -252,6 +268,8 @@ export default function IncomingDocumentForm({
       )}
       {section === "invoice" && (
         <InvoiceField
+          silos={silos}
+          vendors={vendors}
           siloId={invoiceSiloId}
           setSiloId={setInvoiceSiloId}
           vendorId={invoiceVendorId}
@@ -266,6 +284,7 @@ export default function IncomingDocumentForm({
       )}
       {section === "pl" && (
         <PlField
+          silos={silos}
           siloId={plSiloId}
           setSiloId={setPlSiloId}
           noPl={plNo}
@@ -278,6 +297,8 @@ export default function IncomingDocumentForm({
       )}
       {section === "do" && (
         <DoField
+          silos={silos}
+          vendors={vendors}
           siloId={doSiloId}
           setSiloId={setDoSiloId}
           vendorId={doVendorId}
@@ -519,6 +540,8 @@ export function NextPageButton({
 }
 
 export function InvoiceField({
+  silos,
+  vendors,
   siloId,
   setSiloId,
   vendorId,
@@ -530,6 +553,8 @@ export function InvoiceField({
   date,
   setDate
 }: {
+  silos: Silo[];
+  vendors: Vendor[];
   siloId: string;
   setSiloId: (value: string) => void;
   vendorId: string;
@@ -553,13 +578,15 @@ export function InvoiceField({
           <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
           <Select value={siloId} onValueChange={setSiloId}>
             <SelectTrigger id="checkout-7j9-exp-year-f59">
-              <SelectValue placeholder="YYYY" />
+              <SelectValue placeholder="Silo" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="2024">BPT</SelectItem>
-                <SelectItem value="2025">CTI</SelectItem>
-                <SelectItem value="2026">CDT</SelectItem>
+                {silos.map((silo) => (
+                  <SelectItem key={silo.id} value={silo.id}>
+                    {silo.title}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -568,13 +595,15 @@ export function InvoiceField({
           <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
           <Select value={vendorId} onValueChange={setVendorId}>
             <SelectTrigger id="checkout-7j9-exp-year-f59">
-              <SelectValue placeholder="YYYY" />
+              <SelectValue placeholder="Vendor or Patner name" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="2024">PT Indra</SelectItem>
-                <SelectItem value="2025">PT Advance</SelectItem>
-                <SelectItem value="2026">PT Prima</SelectItem>
+                {vendors.map((vendor) => (
+                  <SelectItem key={vendor.id} value={vendor.id}>
+                    {vendor.name || vendor.title}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -631,6 +660,7 @@ export function InvoiceField({
 }
 
 export function PlField({
+  silos,
   siloId,
   setSiloId,
   noPl,
@@ -640,6 +670,7 @@ export function PlField({
   date,
   setDate
 }: {
+  silos: Silo[];
   siloId: string;
   setSiloId: (value: string) => void;
   noPl: string;
@@ -655,13 +686,15 @@ export function PlField({
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
         <Select value={siloId} onValueChange={setSiloId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
+            <SelectValue placeholder="Silo" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="2024">BPT</SelectItem>
-              <SelectItem value="2025">CTI</SelectItem>
-              <SelectItem value="2026">CDT</SelectItem>
+              {silos.map((silo) => (
+                <SelectItem key={silo.id} value={silo.id}>
+                  {silo.title}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -717,6 +750,8 @@ export function PlField({
 }
 
 export function DoField({
+  silos,
+  vendors,
   siloId,
   setSiloId,
   vendorId,
@@ -728,6 +763,8 @@ export function DoField({
   date,
   setDate
 }: {
+  silos: Silo[];
+  vendors: Vendor[];
   siloId: string;
   setSiloId: (value: string) => void;
   vendorId: string;
@@ -745,13 +782,15 @@ export function DoField({
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
         <Select value={siloId} onValueChange={setSiloId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
+            <SelectValue placeholder="Silo" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="2024">BPT</SelectItem>
-              <SelectItem value="2025">CTI</SelectItem>
-              <SelectItem value="2026">CDT</SelectItem>
+              {silos.map((silo) => (
+                <SelectItem key={silo.id} value={silo.id}>
+                  {silo.title}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -760,13 +799,15 @@ export function DoField({
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
         <Select value={vendorId} onValueChange={setVendorId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="YYYY" />
+            <SelectValue placeholder="Vendor or Patner name" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="2024">PT Indra</SelectItem>
-              <SelectItem value="2025">PT Advance</SelectItem>
-              <SelectItem value="2026">PT Prima</SelectItem>
+              {vendors.map((vendor) => (
+                <SelectItem key={vendor.id} value={vendor.id}>
+                  {vendor.name || vendor.title}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>

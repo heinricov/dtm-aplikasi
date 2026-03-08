@@ -1,15 +1,12 @@
 import DataTable from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
-import { columns } from "@/components/table/receipt-invoice";
-import {
-  getReceiptInvoices,
-  type ReceiptInvoice
-} from "@/services/receipt-invoice";
+import { columns } from "@/components/table/receipt-do";
+import { getReceiptDos, type ReceiptDo } from "@/services/receipt-do";
 
 export default async function page() {
-  let data: ReceiptInvoice[] = [];
+  let data: ReceiptDo[] = [];
   try {
-    data = await getReceiptInvoices();
+    data = await getReceiptDos();
   } catch {
     data = [];
   }
@@ -18,9 +15,9 @@ export default async function page() {
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">Receipt Invoice</h2>
+            <h2 className="text-2xl font-bold">Receipt Delivery Order</h2>
             <p className="text-sm text-muted-foreground">
-              Manage receipt invoices.
+              Manage receipt delivery orders.
             </p>
           </div>
         </div>
