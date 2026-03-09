@@ -881,27 +881,23 @@ export function PlField({
         </Select>
       </Field>
       <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-          Invoice Number
-        </FieldLabel>
+        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">Ship Ref</FieldLabel>
         <Input
-          id="checkout-7j9-card-name-43j"
-          placeholder="Evil Rabbit"
-          required
-          value={noPl}
-          onChange={(e) => setNoPl(e.currentTarget.value)}
+          id="checkout-7j9-card-number-uw1"
+          placeholder="REF-0000"
+          value={shipRef}
+          onChange={(e) => setShipRef(e.currentTarget.value)}
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-          PO Number
+        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+          Nomor Packing List
         </FieldLabel>
         <Input
-          id="checkout-7j9-card-number-uw1"
-          placeholder="1234 5678 9012 3456"
-          required
-          value={shipRef}
-          onChange={(e) => setShipRef(e.currentTarget.value)}
+          id="checkout-7j9-card-name-43j"
+          placeholder="PL-0000"
+          value={noPl}
+          onChange={(e) => setNoPl(e.currentTarget.value)}
         />
       </Field>
       <Field className="mx-auto w-44">
@@ -968,6 +964,28 @@ export function DoField({
   return (
     <FieldGroup>
       <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+          Nomor Delivery Oder
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-name-43j"
+          placeholder="DO-0000"
+          value={noDo}
+          onChange={(e) => setNoDo(e.currentTarget.value)}
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+          Numor PID
+        </FieldLabel>
+        <Input
+          id="checkout-7j9-card-number-uw1"
+          placeholder="PID-0000"
+          value={noPid}
+          onChange={(e) => setNoPid(e.currentTarget.value)}
+        />
+      </Field>
+      <Field>
         <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
         <Select value={siloId} onValueChange={setSiloId}>
           <SelectTrigger id="checkout-7j9-exp-year-f59">
@@ -1001,30 +1019,7 @@ export function DoField({
           </SelectContent>
         </Select>
       </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-          Invoice Number
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-name-43j"
-          placeholder="Evil Rabbit"
-          required
-          value={noDo}
-          onChange={(e) => setNoDo(e.currentTarget.value)}
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-          PO Number
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-number-uw1"
-          placeholder="1234 5678 9012 3456"
-          required
-          value={noPid}
-          onChange={(e) => setNoPid(e.currentTarget.value)}
-        />
-      </Field>
+
       <Field className="mx-auto w-44">
         <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
         <Popover>

@@ -3,31 +3,43 @@ import {
   getIncomingDocuments,
   type IncomingDocument
 } from "@/services/incoming-document";
-import { getVendors, type Vendor } from "@/services/vendor";
-import { getSilos, type Silo } from "@/services/silo";
+import {
+  getReceiptInvoices,
+  type ReceiptInvoice
+} from "@/services/receipt-invoice";
+import { getReceiptPls, type ReceiptPl } from "@/services/receipt-pl";
+import { getReceiptDos, type ReceiptDo } from "@/services/receipt-do";
 import { columns as incomingDocumentColumns } from "./table/incoming-document";
-import { columns as vendorColumns } from "./table/vendor";
-import { columns as siloColumns } from "./table/silo";
+import { columns as invoiceColumns } from "./table/receipt-invoice";
+import { columns as doColumns } from "./table/receipt-do";
+import { columns as plColumns } from "./table/receipt-pl";
 import DataTable from "./data-table";
 
 export default async function TabsDashboard() {
   let incoming: IncomingDocument[] = [];
-  let vendors: Vendor[] = [];
-  let silos: Silo[] = [];
+  let invoices: ReceiptInvoice[] = [];
+  let deliveryOrders: ReceiptDo[] = [];
+  let packingList: ReceiptPl[] = [];
+
   try {
     incoming = await getIncomingDocuments();
   } catch {
     incoming = [];
   }
   try {
-    vendors = await getVendors();
+    invoices = await getReceiptInvoices();
   } catch {
-    vendors = [];
+    invoices = [];
   }
   try {
-    silos = await getSilos();
+    deliveryOrders = await getReceiptDos();
   } catch {
-    silos = [];
+    deliveryOrders = [];
+  }
+  try {
+    packingList = await getReceiptPls();
+  } catch {
+    packingList = [];
   }
 
   const tabs = [
@@ -43,21 +55,32 @@ export default async function TabsDashboard() {
       )
     },
     {
-      name: "Vendor",
+      name: "Invoice",
       value: "tab2",
       content: (
         <DataTable
-          columns={vendorColumns}
-          data={vendors}
+          columns={invoiceColumns}
+          data={invoices}
           filterKey="description"
         />
       )
     },
     {
-      name: "Silo",
+      name: "Delivery Order",
       value: "tab3",
       content: (
-        <DataTable columns={siloColumns} data={silos} filterKey="title" />
+        <DataTable
+          columns={doColumns}
+          data={deliveryOrders}
+          filterKey="no_do"
+        />
+      )
+    },
+    {
+      name: "Packing List",
+      value: "tab4",
+      content: (
+        <DataTable columns={plColumns} data={packingList} filterKey="no_pl" />
       )
     }
   ];
