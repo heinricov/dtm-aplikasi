@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldLegend,
@@ -32,6 +31,16 @@ import {
   SelectTrigger,
   SelectValue
 } from "../ui/select";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import { getDocumentTypes, type DocumentType } from "@/services/document-type";
 import { getSenders, type Sender } from "@/services/sender";
 import { getSilos, type Silo } from "@/services/silo";
@@ -39,6 +48,37 @@ import { getVendors, type Vendor } from "@/services/vendor";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { ButtonGroup } from "../ui/button-group";
+import { IconPlus } from "@tabler/icons-react";
+
+type InvoiceItem = {
+  silo_id: string;
+  vendor_id: string;
+  no_invoice: string;
+  no_po: string;
+  scan_date?: Date;
+};
+
+type PlItem = {
+  silo_id: string;
+  no_pl: string;
+  ship_ref: string;
+  scan_date?: Date;
+};
+
+type DoItem = {
+  silo_id: string;
+  vendor_id: string;
+  no_do: string;
+  no_pid: string;
+  scan_date?: Date;
+};
+type BaseInfo = {
+  title: string;
+  date: string;
+  docType: string;
+  sender: string;
+};
 
 export default function IncomingDocumentForm({
   onSuccessClose,
@@ -100,12 +140,57 @@ export default function IncomingDocumentForm({
   const [doNo, setDoNo] = useState("");
   const [doPid, setDoPid] = useState("");
   const [doDate, setDoDate] = useState<Date>();
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
+  const [plItems, setPlItems] = useState<PlItem[]>([]);
+  const [doItems, setDoItems] = useState<DoItem[]>([]);
   const nextDisabled =
     isView ||
     receiptDate.trim() === "" ||
     titleValue.trim() === "" ||
     documentTypeId.trim() === "" ||
     senderId.trim() === "";
+  const baseInfo = {
+    title: titleValue || "",
+    date: receiptDate || "",
+    docType:
+      docTypes.find((dt) => String(dt.id) === documentTypeId)?.title ||
+      documentTypeId ||
+      "",
+    sender:
+      senders.find((s) => String(s.id) === senderId)?.name || senderId || ""
+  };
+  const invoiceRows = invoiceItems.map((item, index) => ({
+    key: `${index}`,
+    silo:
+      silos.find((s) => String(s.id) === item.silo_id)?.title || item.silo_id,
+    vendor:
+      vendors.find((v) => String(v.id) === item.vendor_id)?.name ||
+      vendors.find((v) => String(v.id) === item.vendor_id)?.title ||
+      item.vendor_id,
+    no_invoice: item.no_invoice,
+    no_po: item.no_po,
+    scan_date: item.scan_date
+  }));
+  const plRows = plItems.map((item, index) => ({
+    key: `${index}`,
+    silo:
+      silos.find((s) => String(s.id) === item.silo_id)?.title || item.silo_id,
+    no_pl: item.no_pl,
+    ship_ref: item.ship_ref,
+    scan_date: item.scan_date
+  }));
+  const doRows = doItems.map((item, index) => ({
+    key: `${index}`,
+    silo:
+      silos.find((s) => String(s.id) === item.silo_id)?.title || item.silo_id,
+    vendor:
+      vendors.find((v) => String(v.id) === item.vendor_id)?.name ||
+      vendors.find((v) => String(v.id) === item.vendor_id)?.title ||
+      item.vendor_id,
+    no_do: item.no_do,
+    no_pid: item.no_pid,
+    scan_date: item.scan_date
+  }));
 
   useEffect(() => {
     let mounted = true;
@@ -158,6 +243,18 @@ export default function IncomingDocumentForm({
     e.preventDefault();
     if (submitting) return;
     if (isView) return;
+    if (section === "invoice" && invoiceItems.length === 0) {
+      toast.error("Tambahkan data invoice terlebih dahulu");
+      return;
+    }
+    if (section === "pl" && plItems.length === 0) {
+      toast.error("Tambahkan data packing list terlebih dahulu");
+      return;
+    }
+    if (section === "do" && doItems.length === 0) {
+      toast.error("Tambahkan data delivery order terlebih dahulu");
+      return;
+    }
     const user_id = userId.trim();
     const document_receipt_date = receiptDate.trim();
     const document_type_id = documentTypeId.trim();
@@ -194,33 +291,45 @@ export default function IncomingDocumentForm({
         incomingId = String(created?.id ?? "");
       }
       if (section === "invoice") {
-        await createReceiptInvoice({
-          incoming_document_id: incomingId,
-          silo_id: invoiceSiloId,
-          vendor_id: invoiceVendorId,
-          no_invoice: invoiceNo || undefined,
-          no_po: invoicePo || undefined,
-          scan_date: invoiceDate
-        });
+        await Promise.all(
+          invoiceItems.map((item) =>
+            createReceiptInvoice({
+              incoming_document_id: incomingId,
+              silo_id: item.silo_id,
+              vendor_id: item.vendor_id,
+              no_invoice: item.no_invoice || undefined,
+              no_po: item.no_po || undefined,
+              scan_date: item.scan_date
+            })
+          )
+        );
         toast.success("Receipt invoice created successfully");
       } else if (section === "pl") {
-        await createReceiptPl({
-          incoming_document_id: incomingId,
-          silo_id: plSiloId,
-          no_pl: plNo,
-          ship_ref: plShipRef,
-          scan_date: plDate
-        });
+        await Promise.all(
+          plItems.map((item) =>
+            createReceiptPl({
+              incoming_document_id: incomingId,
+              silo_id: item.silo_id,
+              no_pl: item.no_pl,
+              ship_ref: item.ship_ref,
+              scan_date: item.scan_date
+            })
+          )
+        );
         toast.success("Receipt packing list created successfully");
       } else if (section === "do") {
-        await createReceiptDo({
-          incoming_document_id: incomingId,
-          silo_id: doSiloId,
-          vendor_id: doVendorId,
-          no_do: doNo,
-          no_pid: doPid,
-          scan_date: doDate
-        });
+        await Promise.all(
+          doItems.map((item) =>
+            createReceiptDo({
+              incoming_document_id: incomingId,
+              silo_id: item.silo_id,
+              vendor_id: item.vendor_id,
+              no_do: item.no_do,
+              no_pid: item.no_pid,
+              scan_date: item.scan_date
+            })
+          )
+        );
         toast.success("Receipt delivery order created successfully");
       } else {
         toast.success(
@@ -231,6 +340,9 @@ export default function IncomingDocumentForm({
       }
       router.refresh();
       onSuccessClose?.();
+      setInvoiceItems([]);
+      setPlItems([]);
+      setDoItems([]);
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to submit";
@@ -240,7 +352,7 @@ export default function IncomingDocumentForm({
     }
   }
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="">
       {section === "form" && (
         <IncomingDocumentFields
           initial={initial}
@@ -280,6 +392,32 @@ export default function IncomingDocumentForm({
           setNoPo={setInvoicePo}
           date={invoiceDate}
           setDate={setInvoiceDate}
+          onAdd={() => {
+            if (
+              !invoiceSiloId ||
+              !invoiceVendorId ||
+              !invoiceNo ||
+              !invoicePo
+            ) {
+              toast.error("Lengkapi data invoice terlebih dahulu");
+              return;
+            }
+            setInvoiceItems((prev) => [
+              ...prev,
+              {
+                silo_id: invoiceSiloId,
+                vendor_id: invoiceVendorId,
+                no_invoice: invoiceNo,
+                no_po: invoicePo,
+                scan_date: invoiceDate
+              }
+            ]);
+            setInvoiceSiloId("");
+            setInvoiceVendorId("");
+            setInvoiceNo("");
+            setInvoicePo("");
+            setInvoiceDate(undefined);
+          }}
         />
       )}
       {section === "pl" && (
@@ -293,6 +431,25 @@ export default function IncomingDocumentForm({
           setShipRef={setPlShipRef}
           date={plDate}
           setDate={setPlDate}
+          onAdd={() => {
+            if (!plSiloId || !plNo || !plShipRef) {
+              toast.error("Lengkapi data packing list terlebih dahulu");
+              return;
+            }
+            setPlItems((prev) => [
+              ...prev,
+              {
+                silo_id: plSiloId,
+                no_pl: plNo,
+                ship_ref: plShipRef,
+                scan_date: plDate
+              }
+            ]);
+            setPlSiloId("");
+            setPlNo("");
+            setPlShipRef("");
+            setPlDate(undefined);
+          }}
         />
       )}
       {section === "do" && (
@@ -309,7 +466,41 @@ export default function IncomingDocumentForm({
           setNoPid={setDoPid}
           date={doDate}
           setDate={setDoDate}
+          onAdd={() => {
+            if (!doSiloId || !doVendorId || !doNo || !doPid) {
+              toast.error("Lengkapi data delivery order terlebih dahulu");
+              return;
+            }
+            setDoItems((prev) => [
+              ...prev,
+              {
+                silo_id: doSiloId,
+                vendor_id: doVendorId,
+                no_do: doNo,
+                no_pid: doPid,
+                scan_date: doDate
+              }
+            ]);
+            setDoSiloId("");
+            setDoVendorId("");
+            setDoNo("");
+            setDoPid("");
+            setDoDate(undefined);
+          }}
         />
+      )}
+      {section === "invoice" && (
+        <TableRepeaterData
+          section="invoice"
+          baseInfo={baseInfo}
+          rows={invoiceRows}
+        />
+      )}
+      {section === "pl" && (
+        <TableRepeaterData section="pl" baseInfo={baseInfo} rows={plRows} />
+      )}
+      {section === "do" && (
+        <TableRepeaterData section="do" baseInfo={baseInfo} rows={doRows} />
       )}
       <Separator className="my-4" />
       <DialogFooter className="flex justify-end px-4">
@@ -406,17 +597,7 @@ export function IncomingDocumentFields({
             onChange={(e) => setReceiptDate(e.currentTarget.value)}
           />
         </Field>
-        <Field>
-          <FieldLabel htmlFor="title">Title</FieldLabel>
-          <Input
-            id="title"
-            name="title"
-            placeholder="Title"
-            defaultValue={initial?.title ? String(initial.title) : ""}
-            disabled={isView}
-            onChange={(e) => setTitleValue(e.currentTarget.value)}
-          />
-        </Field>
+
         <Field className="hidden">
           <FieldLabel htmlFor="user_id">User</FieldLabel>
           <Input
@@ -444,10 +625,18 @@ export function IncomingDocumentFields({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <FieldDescription>
-            Select document type for this incoming document.
-          </FieldDescription>
           <input type="hidden" name="document_type_id" value={documentTypeId} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="title">Title</FieldLabel>
+          <Input
+            id="title"
+            name="title"
+            placeholder="Title"
+            defaultValue={initial?.title ? String(initial.title) : ""}
+            disabled={isView}
+            onChange={(e) => setTitleValue(e.currentTarget.value)}
+          />
         </Field>
         <Field>
           <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
@@ -465,24 +654,7 @@ export function IncomingDocumentFields({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <FieldDescription>
-            Select the sender for this document.
-          </FieldDescription>
           <input type="hidden" name="sender_id" value={senderId} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="qty">Quantity</FieldLabel>
-          <Input
-            id="qty"
-            name="qty"
-            type="number"
-            placeholder="Quantity"
-            defaultValue={
-              typeof initial?.qty === "number" ? String(initial.qty) : ""
-            }
-            disabled={isView}
-            onChange={(e) => setQtyValue(e.currentTarget.value)}
-          />
         </Field>
         <Field>
           <FieldLabel htmlFor="note">Note</FieldLabel>
@@ -551,7 +723,8 @@ export function InvoiceField({
   noPo,
   setNoPo,
   date,
-  setDate
+  setDate,
+  onAdd
 }: {
   silos: Silo[];
   vendors: Vendor[];
@@ -565,73 +738,13 @@ export function InvoiceField({
   setNoPo: (value: string) => void;
   date?: Date;
   setDate: (value: Date | undefined) => void;
+  onAdd: () => void;
 }) {
   return (
-    <FieldGroup className="mt-5">
-      <FieldSet>
+    <FieldGroup className="mt-2">
+      <FieldSet className="">
         <FieldLegend>Invoice Form</FieldLegend>
-        <FieldDescription>
-          Input incoming invoice document details here.
-        </FieldDescription>
         <Separator />
-        <Field>
-          <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-          <Select value={siloId} onValueChange={setSiloId}>
-            <SelectTrigger id="checkout-7j9-exp-year-f59">
-              <SelectValue placeholder="Silo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {silos.map((silo) => (
-                  <SelectItem key={silo.id} value={silo.id}>
-                    {silo.title}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-          <Select value={vendorId} onValueChange={setVendorId}>
-            <SelectTrigger id="checkout-7j9-exp-year-f59">
-              <SelectValue placeholder="Vendor or Patner name" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {vendors.map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.id}>
-                    {vendor.name || vendor.title}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-            Invoice Number
-          </FieldLabel>
-          <Input
-            id="checkout-7j9-card-name-43j"
-            placeholder="Evil Rabbit"
-            required
-            value={noInvoice}
-            onChange={(e) => setNoInvoice(e.currentTarget.value)}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-            PO Number
-          </FieldLabel>
-          <Input
-            id="checkout-7j9-card-number-uw1"
-            placeholder="1234 5678 9012 3456"
-            required
-            value={noPo}
-            onChange={(e) => setNoPo(e.currentTarget.value)}
-          />
-        </Field>
         <Field className="">
           <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
           <Popover>
@@ -654,7 +767,73 @@ export function InvoiceField({
             </PopoverContent>
           </Popover>
         </Field>
+        <div className="flex gap-2">
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+            <Select value={siloId} onValueChange={setSiloId}>
+              <SelectTrigger id="checkout-7j9-exp-year-f59">
+                <SelectValue placeholder="Silo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {silos.map((silo) => (
+                    <SelectItem key={silo.id} value={silo.id}>
+                      {silo.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
+            <Select value={vendorId} onValueChange={setVendorId}>
+              <SelectTrigger id="checkout-7j9-exp-year-f59">
+                <SelectValue placeholder="Vendor or Patner name" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {vendors.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.id}>
+                      {vendor.name || vendor.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <div className="flex gap-2">
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+              Invoice Number
+            </FieldLabel>
+            <Input
+              id="checkout-7j9-card-name-43j"
+              placeholder="INV-0000"
+              value={noInvoice}
+              onChange={(e) => setNoInvoice(e.currentTarget.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+              PO Number
+            </FieldLabel>
+            <Input
+              id="checkout-7j9-card-number-uw1"
+              placeholder="PO-0000"
+              value={noPo}
+              onChange={(e) => setNoPo(e.currentTarget.value)}
+            />
+          </Field>
+        </div>
       </FieldSet>
+      <ButtonGroup>
+        <Button variant="secondary" type="button" onClick={onAdd}>
+          <IconPlus />
+          Add
+        </Button>
+      </ButtonGroup>
     </FieldGroup>
   );
 }
@@ -668,7 +847,8 @@ export function PlField({
   shipRef,
   setShipRef,
   date,
-  setDate
+  setDate,
+  onAdd
 }: {
   silos: Silo[];
   siloId: string;
@@ -679,6 +859,7 @@ export function PlField({
   setShipRef: (value: string) => void;
   date?: Date;
   setDate: (value: Date | undefined) => void;
+  onAdd: () => void;
 }) {
   return (
     <FieldGroup>
@@ -745,6 +926,12 @@ export function PlField({
           </PopoverContent>
         </Popover>
       </Field>
+      <ButtonGroup>
+        <Button variant="secondary" type="button" onClick={onAdd}>
+          <IconPlus />
+          Add
+        </Button>
+      </ButtonGroup>
     </FieldGroup>
   );
 }
@@ -761,7 +948,8 @@ export function DoField({
   noPid,
   setNoPid,
   date,
-  setDate
+  setDate,
+  onAdd
 }: {
   silos: Silo[];
   vendors: Vendor[];
@@ -775,6 +963,7 @@ export function DoField({
   setNoPid: (value: string) => void;
   date?: Date;
   setDate: (value: Date | undefined) => void;
+  onAdd: () => void;
 }) {
   return (
     <FieldGroup>
@@ -858,6 +1047,99 @@ export function DoField({
           </PopoverContent>
         </Popover>
       </Field>
+      <ButtonGroup>
+        <Button variant="secondary" type="button" onClick={onAdd}>
+          <IconPlus />
+          Add
+        </Button>
+      </ButtonGroup>
     </FieldGroup>
+  );
+}
+
+export function TableRepeaterData({
+  section,
+  baseInfo,
+  rows
+}: {
+  section: "invoice" | "pl" | "do";
+  baseInfo: BaseInfo;
+  rows: Array<Record<string, string | number | Date | undefined>>;
+}) {
+  const headers =
+    section === "invoice"
+      ? [
+          { key: "silo", label: "Silo" },
+          { key: "vendor", label: "Vendor" },
+          { key: "no_invoice", label: "Invoice" },
+          { key: "no_po", label: "PO" },
+          { key: "scan_date", label: "Date" }
+        ]
+      : section === "pl"
+        ? [
+            { key: "silo", label: "Silo" },
+            { key: "no_pl", label: "PL" },
+            { key: "ship_ref", label: "Ship Ref" },
+            { key: "scan_date", label: "Date" }
+          ]
+        : [
+            { key: "silo", label: "Silo" },
+            { key: "vendor", label: "Vendor" },
+            { key: "no_do", label: "DO" },
+            { key: "no_pid", label: "PID" },
+            { key: "scan_date", label: "Date" }
+          ];
+  return (
+    <div>
+      <div className="flex gap-2">
+        <p>Incoming Document :</p> <p>{baseInfo.title}</p>
+      </div>
+      <div className="flex gap-2">
+        <p>Document Date :</p> <p>{baseInfo.date}</p>
+      </div>
+      <div className="flex gap-2">
+        <p>Document Type :</p> <p>{baseInfo.docType}</p>
+      </div>
+      <div className="flex gap-2">
+        <p>Document Sender :</p> <p>{baseInfo.sender}</p>
+      </div>
+      <Table className="mt-5">
+        <TableHeader className="bg-accent">
+          <TableRow>
+            {headers.map((header) => (
+              <TableHead key={header.key} className="capitalize">
+                {header.label}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={headers.length} className="text-center">
+                Belum ada data
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row, index) => (
+              <TableRow key={String(row.key ?? index)}>
+                {headers.map((header) => {
+                  const value = row[header.key];
+                  const text =
+                    value instanceof Date
+                      ? format(value, "yyyy-MM-dd")
+                      : String(value ?? "");
+                  return (
+                    <TableCell key={header.key} className="font-medium">
+                      {text}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ export default async function page() {
             </p>
           </div>
           <FormDialog
-            maxWidth="5xl"
+            maxWidth="7xl"
             title="Add New Incoming Document"
             description="Add a new incoming document."
             formFields={<IncomingDocumentForm />}
