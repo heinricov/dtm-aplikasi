@@ -2,9 +2,10 @@
 import * as React from "react";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import {
   Field,
+  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldLegend,
@@ -12,7 +13,6 @@ import {
 } from "../ui/field";
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
-import { DialogClose, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import {
   createIncomingDocument,
@@ -34,9 +34,7 @@ import {
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow
@@ -50,20 +48,19 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ButtonGroup } from "../ui/button-group";
 import { IconPlus } from "@tabler/icons-react";
+import { Textarea } from "../ui/textarea";
 
 type InvoiceItem = {
   silo_id: string;
   vendor_id: string;
   no_invoice: string;
   no_po: string;
-  scan_date?: Date;
 };
 
 type PlItem = {
   silo_id: string;
   no_pl: string;
   ship_ref: string;
-  scan_date?: Date;
 };
 
 type DoItem = {
@@ -71,7 +68,6 @@ type DoItem = {
   vendor_id: string;
   no_do: string;
   no_pid: string;
-  scan_date?: Date;
 };
 type BaseInfo = {
   title: string;
@@ -106,7 +102,7 @@ export default function IncomingDocumentForm({
   const [receiptDate, setReceiptDate] = useState(
     initial?.document_receipt_date
       ? String(initial.document_receipt_date).slice(0, 10)
-      : ""
+      : new Date().toISOString().slice(0, 10)
   );
   const [titleValue, setTitleValue] = useState(
     initial?.title ? String(initial.title) : ""
@@ -168,16 +164,14 @@ export default function IncomingDocumentForm({
       vendors.find((v) => String(v.id) === item.vendor_id)?.title ||
       item.vendor_id,
     no_invoice: item.no_invoice,
-    no_po: item.no_po,
-    scan_date: item.scan_date
+    no_po: item.no_po
   }));
   const plRows = plItems.map((item, index) => ({
     key: `${index}`,
     silo:
       silos.find((s) => String(s.id) === item.silo_id)?.title || item.silo_id,
     no_pl: item.no_pl,
-    ship_ref: item.ship_ref,
-    scan_date: item.scan_date
+    ship_ref: item.ship_ref
   }));
   const doRows = doItems.map((item, index) => ({
     key: `${index}`,
@@ -188,8 +182,7 @@ export default function IncomingDocumentForm({
       vendors.find((v) => String(v.id) === item.vendor_id)?.title ||
       item.vendor_id,
     no_do: item.no_do,
-    no_pid: item.no_pid,
-    scan_date: item.scan_date
+    no_pid: item.no_pid
   }));
 
   useEffect(() => {
@@ -298,8 +291,7 @@ export default function IncomingDocumentForm({
               silo_id: item.silo_id,
               vendor_id: item.vendor_id,
               no_invoice: item.no_invoice || undefined,
-              no_po: item.no_po || undefined,
-              scan_date: item.scan_date
+              no_po: item.no_po || undefined
             })
           )
         );
@@ -311,8 +303,7 @@ export default function IncomingDocumentForm({
               incoming_document_id: incomingId,
               silo_id: item.silo_id,
               no_pl: item.no_pl,
-              ship_ref: item.ship_ref,
-              scan_date: item.scan_date
+              ship_ref: item.ship_ref
             })
           )
         );
@@ -325,8 +316,7 @@ export default function IncomingDocumentForm({
               silo_id: item.silo_id,
               vendor_id: item.vendor_id,
               no_do: item.no_do,
-              no_pid: item.no_pid,
-              scan_date: item.scan_date
+              no_pid: item.no_pid
             })
           )
         );
@@ -353,195 +343,222 @@ export default function IncomingDocumentForm({
   }
   return (
     <form onSubmit={onSubmit} className="">
-      {section === "form" && (
-        <IncomingDocumentFields
-          initial={initial}
-          isView={isView}
-          docTypes={docTypes}
-          documentTypeId={documentTypeId}
-          setDocumentTypeId={setDocumentTypeId}
-          senders={senders}
-          senderId={senderId}
-          setSenderId={setSenderId}
-          userId={userId}
-          setReceiptDate={setReceiptDate}
-          setTitleValue={setTitleValue}
-          setQtyValue={setQtyValue}
-          setNoteValue={setNoteValue}
-          setDescriptionValue={setDescriptionValue}
-        />
-      )}
-      {section === "next" && (
-        <NextPageButton
-          onInvoice={() => setSection("invoice")}
-          onPl={() => setSection("pl")}
-          onDo={() => setSection("do")}
-        />
-      )}
-      {section === "invoice" && (
-        <InvoiceField
-          silos={silos}
-          vendors={vendors}
-          siloId={invoiceSiloId}
-          setSiloId={setInvoiceSiloId}
-          vendorId={invoiceVendorId}
-          setVendorId={setInvoiceVendorId}
-          noInvoice={invoiceNo}
-          setNoInvoice={setInvoiceNo}
-          noPo={invoicePo}
-          setNoPo={setInvoicePo}
-          date={invoiceDate}
-          setDate={setInvoiceDate}
-          onAdd={() => {
-            if (
-              !invoiceSiloId ||
-              !invoiceVendorId ||
-              !invoiceNo ||
-              !invoicePo
-            ) {
-              toast.error("Lengkapi data invoice terlebih dahulu");
-              return;
-            }
-            setInvoiceItems((prev) => [
-              ...prev,
-              {
-                silo_id: invoiceSiloId,
-                vendor_id: invoiceVendorId,
-                no_invoice: invoiceNo,
-                no_po: invoicePo,
-                scan_date: invoiceDate
-              }
-            ]);
-            setInvoiceSiloId("");
-            setInvoiceVendorId("");
-            setInvoiceNo("");
-            setInvoicePo("");
-            setInvoiceDate(undefined);
-          }}
-        />
-      )}
-      {section === "pl" && (
-        <PlField
-          silos={silos}
-          siloId={plSiloId}
-          setSiloId={setPlSiloId}
-          noPl={plNo}
-          setNoPl={setPlNo}
-          shipRef={plShipRef}
-          setShipRef={setPlShipRef}
-          date={plDate}
-          setDate={setPlDate}
-          onAdd={() => {
-            if (!plSiloId || !plNo || !plShipRef) {
-              toast.error("Lengkapi data packing list terlebih dahulu");
-              return;
-            }
-            setPlItems((prev) => [
-              ...prev,
-              {
-                silo_id: plSiloId,
-                no_pl: plNo,
-                ship_ref: plShipRef,
-                scan_date: plDate
-              }
-            ]);
-            setPlSiloId("");
-            setPlNo("");
-            setPlShipRef("");
-            setPlDate(undefined);
-          }}
-        />
-      )}
-      {section === "do" && (
-        <DoField
-          silos={silos}
-          vendors={vendors}
-          siloId={doSiloId}
-          setSiloId={setDoSiloId}
-          vendorId={doVendorId}
-          setVendorId={setDoVendorId}
-          noDo={doNo}
-          setNoDo={setDoNo}
-          noPid={doPid}
-          setNoPid={setDoPid}
-          date={doDate}
-          setDate={setDoDate}
-          onAdd={() => {
-            if (!doSiloId || !doVendorId || !doNo || !doPid) {
-              toast.error("Lengkapi data delivery order terlebih dahulu");
-              return;
-            }
-            setDoItems((prev) => [
-              ...prev,
-              {
-                silo_id: doSiloId,
-                vendor_id: doVendorId,
-                no_do: doNo,
-                no_pid: doPid,
-                scan_date: doDate
-              }
-            ]);
-            setDoSiloId("");
-            setDoVendorId("");
-            setDoNo("");
-            setDoPid("");
-            setDoDate(undefined);
-          }}
-        />
-      )}
-      {section === "invoice" && (
-        <TableRepeaterData
-          section="invoice"
-          baseInfo={baseInfo}
-          rows={invoiceRows}
-        />
-      )}
-      {section === "pl" && (
-        <TableRepeaterData section="pl" baseInfo={baseInfo} rows={plRows} />
-      )}
-      {section === "do" && (
-        <TableRepeaterData section="do" baseInfo={baseInfo} rows={doRows} />
-      )}
-      <Separator className="my-4" />
-      <DialogFooter className="flex justify-end px-4">
-        <DialogClose asChild>
-          <Button variant="outline">{isView ? "Close" : "Cancel"}</Button>
-        </DialogClose>
-        {!isView &&
-          (section === "invoice" || section === "pl" || section === "do") && (
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+      <FieldGroup className="max-w-6xl mx-auto mt-10">
+        <FieldSet>
+          <FieldLegend>
+            {section === "form"
+              ? "Incoming Document"
+              : section === "invoice"
+                ? "Receipt Invoice"
+                : section === "pl"
+                  ? "Receipt Packing List"
+                  : section === "do"
+                    ? "Receipt Delivery Order"
+                    : "Incoming Document"}
+          </FieldLegend>
+          {section === "form" && (
+            <FieldDescription>
+              All transactions are secure and encrypted
+            </FieldDescription>
+          )}
+          {section === "form" && (
+            <IncomingDocumentFields
+              initial={initial}
+              isView={isView}
+              docTypes={docTypes}
+              documentTypeId={documentTypeId}
+              setDocumentTypeId={setDocumentTypeId}
+              senders={senders}
+              senderId={senderId}
+              setSenderId={setSenderId}
+              userId={userId}
+              setReceiptDate={setReceiptDate}
+              receiptDate={receiptDate}
+              setTitleValue={setTitleValue}
+              setQtyValue={setQtyValue}
+              setNoteValue={setNoteValue}
+              setDescriptionValue={setDescriptionValue}
+            />
+          )}
+          {section === "next" && (
+            <NextPageButton
+              onInvoice={() => setSection("invoice")}
+              onPl={() => setSection("pl")}
+              onDo={() => setSection("do")}
+            />
+          )}
+          {section === "invoice" && (
+            <InvoiceField
+              silos={silos}
+              vendors={vendors}
+              siloId={invoiceSiloId}
+              setSiloId={setInvoiceSiloId}
+              vendorId={invoiceVendorId}
+              setVendorId={setInvoiceVendorId}
+              noInvoice={invoiceNo}
+              setNoInvoice={setInvoiceNo}
+              noPo={invoicePo}
+              setNoPo={setInvoicePo}
+              date={invoiceDate}
+              setDate={setInvoiceDate}
+              onAdd={() => {
+                if (
+                  !invoiceSiloId ||
+                  !invoiceVendorId ||
+                  !invoiceNo ||
+                  !invoicePo
+                ) {
+                  toast.error("Lengkapi data invoice terlebih dahulu");
+                  return;
+                }
+                setInvoiceItems((prev) => [
+                  ...prev,
+                  {
+                    silo_id: invoiceSiloId,
+                    vendor_id: invoiceVendorId,
+                    no_invoice: invoiceNo,
+                    no_po: invoicePo,
+                    scan_date: invoiceDate
+                  }
+                ]);
+                setInvoiceSiloId("");
+                setInvoiceVendorId("");
+                setInvoiceNo("");
+                setInvoicePo("");
+                setInvoiceDate(undefined);
+              }}
+            />
+          )}
+          {section === "pl" && (
+            <PlField
+              silos={silos}
+              siloId={plSiloId}
+              setSiloId={setPlSiloId}
+              noPl={plNo}
+              setNoPl={setPlNo}
+              shipRef={plShipRef}
+              setShipRef={setPlShipRef}
+              date={plDate}
+              setDate={setPlDate}
+              onAdd={() => {
+                if (!plSiloId || !plNo || !plShipRef) {
+                  toast.error("Lengkapi data packing list terlebih dahulu");
+                  return;
+                }
+                setPlItems((prev) => [
+                  ...prev,
+                  {
+                    silo_id: plSiloId,
+                    no_pl: plNo,
+                    ship_ref: plShipRef,
+                    scan_date: plDate
+                  }
+                ]);
+                setPlSiloId("");
+                setPlNo("");
+                setPlShipRef("");
+                setPlDate(undefined);
+              }}
+            />
+          )}
+          {section === "do" && (
+            <DoField
+              silos={silos}
+              vendors={vendors}
+              siloId={doSiloId}
+              setSiloId={setDoSiloId}
+              vendorId={doVendorId}
+              setVendorId={setDoVendorId}
+              noDo={doNo}
+              setNoDo={setDoNo}
+              noPid={doPid}
+              setNoPid={setDoPid}
+              date={doDate}
+              setDate={setDoDate}
+              onAdd={() => {
+                if (!doSiloId || !doVendorId || !doNo || !doPid) {
+                  toast.error("Lengkapi data delivery order terlebih dahulu");
+                  return;
+                }
+                setDoItems((prev) => [
+                  ...prev,
+                  {
+                    silo_id: doSiloId,
+                    vendor_id: doVendorId,
+                    no_do: doNo,
+                    no_pid: doPid,
+                    scan_date: doDate
+                  }
+                ]);
+                setDoSiloId("");
+                setDoVendorId("");
+                setDoNo("");
+                setDoPid("");
+                setDoDate(undefined);
+              }}
+            />
+          )}
+        </FieldSet>
+        {section === "invoice" && (
+          <TableRepeaterData
+            section="invoice"
+            baseInfo={baseInfo}
+            rows={invoiceRows}
+          />
+        )}
+        {section === "pl" && (
+          <TableRepeaterData section="pl" baseInfo={baseInfo} rows={plRows} />
+        )}
+        {section === "do" && (
+          <TableRepeaterData section="do" baseInfo={baseInfo} rows={doRows} />
+        )}
+        <Separator className="my-4" />
+        <div className="flex justify-end gap-2">
+          {!isView &&
+            (section === "invoice" || section === "pl" || section === "do") && (
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+              </Button>
+            )}
+          {(section === "invoice" || section === "pl" || section === "do") && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSection("next")}
+            >
+              Back
             </Button>
           )}
-        {(section === "invoice" || section === "pl" || section === "do") && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSection("next")}
-          >
-            Back
-          </Button>
-        )}
-        {section === "next" && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSection("form")}
-          >
-            Back
-          </Button>
-        )}
-        {section === "form" && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSection("next")}
-            disabled={nextDisabled}
-          >
-            Next
-          </Button>
-        )}
-      </DialogFooter>
+          {section === "next" && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSection("form")}
+            >
+              Back
+            </Button>
+          )}
+          {section === "form" && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSection("next")}
+              disabled={nextDisabled}
+            >
+              Next
+            </Button>
+          )}
+          {!isView && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => redirect("/")}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
+      </FieldGroup>
     </form>
   );
 }
@@ -557,6 +574,7 @@ export function IncomingDocumentFields({
   setSenderId,
   userId,
   setReceiptDate,
+  receiptDate,
   setTitleValue,
   setQtyValue,
   setNoteValue,
@@ -572,6 +590,7 @@ export function IncomingDocumentFields({
   setSenderId: (value: string) => void;
   userId: string;
   setReceiptDate: (value: string) => void;
+  receiptDate: string;
   setTitleValue: (value: string) => void;
   setQtyValue: (value: string) => void;
   setNoteValue: (value: string) => void;
@@ -580,106 +599,122 @@ export function IncomingDocumentFields({
   return (
     <FieldGroup className="">
       <div className="grid grid-cols-2 gap-4">
-        <Field>
-          <FieldLabel htmlFor="document_receipt_date">Receipt Date</FieldLabel>
-          <Input
-            id="document_receipt_date"
-            name="document_receipt_date"
-            type="date"
-            placeholder="YYYY-MM-DD"
-            defaultValue={
-              initial?.document_receipt_date
-                ? String(initial.document_receipt_date).slice(0, 10)
-                : ""
-            }
-            disabled={isView}
-            required
-            onChange={(e) => setReceiptDate(e.currentTarget.value)}
-          />
-        </Field>
+        <div className="space-y-4">
+          <Field>
+            <FieldLabel htmlFor="document_receipt_date">
+              Receipt Date
+            </FieldLabel>
+            <Input
+              id="document_receipt_date"
+              name="document_receipt_date"
+              type="date"
+              placeholder={receiptDate}
+              defaultValue={
+                initial?.document_receipt_date
+                  ? String(initial.document_receipt_date).slice(0, 10)
+                  : ""
+              }
+              disabled={isView}
+              required
+              onChange={(e) => setReceiptDate(e.currentTarget.value)}
+            />
+          </Field>
 
-        <Field className="hidden">
-          <FieldLabel htmlFor="user_id">User</FieldLabel>
-          <Input
-            id="user_id"
-            name="user_id"
-            placeholder="User ID"
-            value={userId}
-            readOnly
-            required
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="document_type_id">Document Type</FieldLabel>
-          <Select value={documentTypeId} onValueChange={setDocumentTypeId}>
-            <SelectTrigger disabled={isView}>
-              <SelectValue placeholder="Choose document type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {docTypes.map((dt) => (
-                  <SelectItem key={dt.id} value={dt.id}>
-                    {dt.title}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <input type="hidden" name="document_type_id" value={documentTypeId} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="title">Title</FieldLabel>
-          <Input
-            id="title"
-            name="title"
-            placeholder="Title"
-            defaultValue={initial?.title ? String(initial.title) : ""}
-            disabled={isView}
-            onChange={(e) => setTitleValue(e.currentTarget.value)}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
-          <Select value={senderId} onValueChange={setSenderId}>
-            <SelectTrigger disabled={isView}>
-              <SelectValue placeholder="Choose sender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {senders.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <input type="hidden" name="sender_id" value={senderId} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="note">Note</FieldLabel>
-          <Input
-            id="note"
-            name="note"
-            placeholder="Note"
-            defaultValue={initial?.note ? String(initial.note) : ""}
-            disabled={isView}
-            onChange={(e) => setNoteValue(e.currentTarget.value)}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="description">Description</FieldLabel>
-          <Input
-            id="description"
-            name="description"
-            placeholder="Description"
-            defaultValue={
-              initial?.description ? String(initial.description) : ""
-            }
-            disabled={isView}
-            onChange={(e) => setDescriptionValue(e.currentTarget.value)}
-          />
-        </Field>
+          <Field className="hidden">
+            <FieldLabel htmlFor="user_id">User</FieldLabel>
+            <Input
+              id="user_id"
+              name="user_id"
+              placeholder="User ID"
+              value={userId}
+              readOnly
+              required
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="document_type_id">Document Type</FieldLabel>
+            <Select value={documentTypeId} onValueChange={setDocumentTypeId}>
+              <SelectTrigger disabled={isView}>
+                <SelectValue placeholder="Choose document type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {docTypes.map((dt) => (
+                    <SelectItem key={dt.id} value={dt.id}>
+                      {dt.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <input
+              type="hidden"
+              name="document_type_id"
+              value={documentTypeId}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="title">Title</FieldLabel>
+            <Input
+              id="title"
+              name="title"
+              placeholder="Title"
+              defaultValue={initial?.title ? String(initial.title) : ""}
+              disabled={isView}
+              onChange={(e) => setTitleValue(e.currentTarget.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
+            <Select value={senderId} onValueChange={setSenderId}>
+              <SelectTrigger disabled={isView}>
+                <SelectValue placeholder="Choose sender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {senders.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="sender_id" value={senderId} />
+          </Field>
+        </div>
+        <div className="space-y-4">
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-optional-comments">
+              Note
+            </FieldLabel>
+            <Textarea
+              id="note"
+              name="note"
+              placeholder="Note"
+              defaultValue={initial?.note ? String(initial.note) : ""}
+              disabled={isView}
+              onChange={(e) => setNoteValue(e.currentTarget.value)}
+              className="resize-none"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-optional-comments">
+              Description
+            </FieldLabel>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Description"
+              defaultValue={
+                initial?.description ? String(initial.description) : ""
+              }
+              disabled={isView}
+              onChange={(e) => setDescriptionValue(e.currentTarget.value)}
+              className="resize-none"
+            />
+          </Field>
+        </div>
       </div>
     </FieldGroup>
   );
@@ -695,8 +730,8 @@ export function NextPageButton({
   onDo: () => void;
 }) {
   return (
-    <>
-      <div className="flex flex-col items-center justify-center gap-4">
+    <div className="mt-20 mb-20">
+      <div className="grid grid-cols-3 gap-4">
         <Button variant="outline" className="w-64" onClick={onInvoice}>
           INVOICE
         </Button>
@@ -707,7 +742,7 @@ export function NextPageButton({
           Packing List
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -742,32 +777,8 @@ export function InvoiceField({
 }) {
   return (
     <FieldGroup className="mt-2">
-      <FieldSet className="">
-        <FieldLegend>Invoice Form</FieldLegend>
-        <Separator />
-        <Field className="">
-          <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                id="date-picker-simple"
-                className="justify-start font-normal"
-              >
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                defaultMonth={date}
-              />
-            </PopoverContent>
-          </Popover>
-        </Field>
-        <div className="flex gap-2">
+      <FieldSet className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <Field>
             <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
             <Select value={siloId} onValueChange={setSiloId}>
@@ -803,7 +814,7 @@ export function InvoiceField({
             </Select>
           </Field>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-4">
           <Field>
             <FieldLabel htmlFor="checkout-7j9-card-name-43j">
               Invoice Number
@@ -828,12 +839,14 @@ export function InvoiceField({
           </Field>
         </div>
       </FieldSet>
-      <ButtonGroup>
-        <Button variant="secondary" type="button" onClick={onAdd}>
-          <IconPlus />
-          Add
-        </Button>
-      </ButtonGroup>
+      <div className="flex items-end justify-end gap-4">
+        <ButtonGroup>
+          <Button variant="secondary" type="button" onClick={onAdd}>
+            <IconPlus />
+            Add
+          </Button>
+        </ButtonGroup>
+      </div>
     </FieldGroup>
   );
 }
@@ -862,72 +875,60 @@ export function PlField({
   onAdd: () => void;
 }) {
   return (
-    <FieldGroup>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-        <Select value={siloId} onValueChange={setSiloId}>
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="Silo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {silos.map((silo) => (
-                <SelectItem key={silo.id} value={silo.id}>
-                  {silo.title}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">Ship Ref</FieldLabel>
-        <Input
-          id="checkout-7j9-card-number-uw1"
-          placeholder="REF-0000"
-          value={shipRef}
-          onChange={(e) => setShipRef(e.currentTarget.value)}
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-          Nomor Packing List
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-name-43j"
-          placeholder="PL-0000"
-          value={noPl}
-          onChange={(e) => setNoPl(e.currentTarget.value)}
-        />
-      </Field>
-      <Field className="mx-auto w-44">
-        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              id="date-picker-simple"
-              className="justify-start font-normal"
-            >
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              defaultMonth={date}
+    <FieldGroup className="mt-2">
+      <FieldSet className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
+            <Select value={siloId} onValueChange={setSiloId}>
+              <SelectTrigger id="checkout-7j9-exp-year-f59">
+                <SelectValue placeholder="Silo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {silos.map((silo) => (
+                    <SelectItem key={silo.id} value={silo.id}>
+                      {silo.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+              Ship Ref
+            </FieldLabel>
+            <Input
+              id="checkout-7j9-card-number-uw1"
+              placeholder="REF-0000"
+              value={shipRef}
+              onChange={(e) => setShipRef(e.currentTarget.value)}
             />
-          </PopoverContent>
-        </Popover>
-      </Field>
-      <ButtonGroup>
-        <Button variant="secondary" type="button" onClick={onAdd}>
-          <IconPlus />
-          Add
-        </Button>
-      </ButtonGroup>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field className="col-span-2">
+            <FieldLabel htmlFor="checkout-7j9-card-name-43j">
+              Nomor Packing List
+            </FieldLabel>
+            <Input
+              id="checkout-7j9-card-name-43j"
+              placeholder="PL-0000"
+              value={noPl}
+              onChange={(e) => setNoPl(e.currentTarget.value)}
+            />
+          </Field>
+        </div>
+      </FieldSet>
+      <div className="flex items-end justify-end gap-4">
+        <ButtonGroup>
+          <Button variant="secondary" type="button" onClick={onAdd}>
+            <IconPlus />
+            Add
+          </Button>
+        </ButtonGroup>
+      </div>
     </FieldGroup>
   );
 }
@@ -962,92 +963,73 @@ export function DoField({
   onAdd: () => void;
 }) {
   return (
-    <FieldGroup>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-          Nomor Delivery Oder
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-name-43j"
-          placeholder="DO-0000"
-          value={noDo}
-          onChange={(e) => setNoDo(e.currentTarget.value)}
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-          Numor PID
-        </FieldLabel>
-        <Input
-          id="checkout-7j9-card-number-uw1"
-          placeholder="PID-0000"
-          value={noPid}
-          onChange={(e) => setNoPid(e.currentTarget.value)}
-        />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-        <Select value={siloId} onValueChange={setSiloId}>
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="Silo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {silos.map((silo) => (
-                <SelectItem key={silo.id} value={silo.id}>
-                  {silo.title}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-        <Select value={vendorId} onValueChange={setVendorId}>
-          <SelectTrigger id="checkout-7j9-exp-year-f59">
-            <SelectValue placeholder="Vendor or Patner name" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {vendors.map((vendor) => (
-                <SelectItem key={vendor.id} value={vendor.id}>
-                  {vendor.name || vendor.title}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field className="mx-auto w-44">
-        <FieldLabel htmlFor="date-picker-simple">Date</FieldLabel>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              id="date-picker-simple"
-              className="justify-start font-normal"
-            >
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              defaultMonth={date}
+    <FieldGroup className="mt-2">
+      <FieldSet className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Field>
+            <FieldLabel htmlFor="do-number">Nomor Delivery Order</FieldLabel>
+            <Input
+              id="do-number"
+              placeholder="DO-0000"
+              value={noDo}
+              onChange={(e) => setNoDo(e.currentTarget.value)}
             />
-          </PopoverContent>
-        </Popover>
-      </Field>
-      <ButtonGroup>
-        <Button variant="secondary" type="button" onClick={onAdd}>
-          <IconPlus />
-          Add
-        </Button>
-      </ButtonGroup>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="do-pid">Nomor PID</FieldLabel>
+            <Input
+              id="do-pid"
+              placeholder="PID-0000"
+              value={noPid}
+              onChange={(e) => setNoPid(e.currentTarget.value)}
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field>
+            <FieldLabel htmlFor="do-silo">Silo</FieldLabel>
+            <Select value={siloId} onValueChange={setSiloId}>
+              <SelectTrigger id="do-silo">
+                <SelectValue placeholder="Silo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {silos.map((silo) => (
+                    <SelectItem key={silo.id} value={silo.id}>
+                      {silo.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="do-vendor">Vendor</FieldLabel>
+            <Select value={vendorId} onValueChange={setVendorId}>
+              <SelectTrigger id="do-vendor">
+                <SelectValue placeholder="Vendor or Patner name" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {vendors.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.id}>
+                      {vendor.name || vendor.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <div className="flex items-end justify-end gap-4">
+          <ButtonGroup>
+            <Button variant="secondary" type="button" onClick={onAdd}>
+              <IconPlus />
+              Add
+            </Button>
+          </ButtonGroup>
+        </div>
+      </FieldSet>
     </FieldGroup>
   );
 }
@@ -1067,8 +1049,7 @@ export function TableRepeaterData({
           { key: "silo", label: "Silo" },
           { key: "vendor", label: "Vendor" },
           { key: "no_invoice", label: "Invoice" },
-          { key: "no_po", label: "PO" },
-          { key: "scan_date", label: "Date" }
+          { key: "no_po", label: "PO" }
         ]
       : section === "pl"
         ? [
@@ -1081,8 +1062,7 @@ export function TableRepeaterData({
             { key: "silo", label: "Silo" },
             { key: "vendor", label: "Vendor" },
             { key: "no_do", label: "DO" },
-            { key: "no_pid", label: "PID" },
-            { key: "scan_date", label: "Date" }
+            { key: "no_pid", label: "PID" }
           ];
   return (
     <div>

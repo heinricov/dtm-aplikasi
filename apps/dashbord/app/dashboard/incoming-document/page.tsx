@@ -1,4 +1,3 @@
-import { FormDialog } from "@/components/form-dialog";
 import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -7,7 +6,6 @@ import {
   getIncomingDocuments,
   type IncomingDocument
 } from "@/services/incoming-document";
-import IncomingDocumentForm from "@/components/form/incoming-document";
 
 export default async function page() {
   let data: IncomingDocument[] = [];
@@ -26,13 +24,9 @@ export default async function page() {
               Manage incoming documents.
             </p>
           </div>
-          <FormDialog
-            maxWidth="7xl"
-            title="Add New Incoming Document"
-            description="Add a new incoming document."
-            formFields={<IncomingDocumentForm />}
-            trigger={<Button className="mt-4">Add New</Button>}
-          />
+          <Button className="mt-4">
+            <a href="/dashboard/incoming-document/add-new">Add New</a>
+          </Button>
         </div>
         <Separator className="my-4" />
         <DataTable columns={columns} data={data} filterKey="description" />

@@ -143,13 +143,17 @@ export const columns: ColumnDef<IncomingDocument>[] = [
     )
   },
   {
-    accessorKey: "title",
-    header: "Title",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("title")}</div>
+    accessorKey: "sender",
+    header: "Sender",
+    cell: ({ row }) => {
+      const o = row.original as IncomingDocument;
+      const text = o?.sender?.name || o?.sender_id;
+      return <div className="capitalize">{text}</div>;
+    }
   },
   {
     accessorKey: "user",
-    header: "User",
+    header: "Recipient",
     cell: ({ row }) => {
       const o = row.original as IncomingDocument;
       const text = o?.user?.name || o?.user_id;
@@ -166,13 +170,9 @@ export const columns: ColumnDef<IncomingDocument>[] = [
     }
   },
   {
-    accessorKey: "sender",
-    header: "Sender",
-    cell: ({ row }) => {
-      const o = row.original as IncomingDocument;
-      const text = o?.sender?.name || o?.sender_id;
-      return <div className="capitalize">{text}</div>;
-    }
+    accessorKey: "title",
+    header: "Title",
+    cell: ({ row }) => <div className="capitalize">{row.getValue("title")}</div>
   },
   {
     accessorKey: "qty",
