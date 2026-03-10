@@ -24,14 +24,6 @@ import { createReceiptPl } from "@/services/receipt-pl";
 import { createReceiptDo } from "@/services/receipt-do";
 import { toast } from "sonner";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -43,12 +35,16 @@ import { getDocumentTypes, type DocumentType } from "@/services/document-type";
 import { getSenders, type Sender } from "@/services/sender";
 import { getSilos, type Silo } from "@/services/silo";
 import { getVendors, type Vendor } from "@/services/vendor";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ButtonGroup } from "../ui/button-group";
 import { IconPlus } from "@tabler/icons-react";
-import { Textarea } from "../ui/textarea";
+import { DatePickerInput } from "../ui/field-date-input";
+import FieldSelectInput from "../ui/field-select-input";
+import { FieldInput } from "../ui/field-input";
+import { FieldInputTextarea } from "../ui/field-input-textarea";
+import { FormDialog } from "../form-dialog";
+import DocumentTypeForm from "../form/document-type";
+import { Plus } from "lucide-react";
 
 type InvoiceItem = {
   silo_id: string;
@@ -99,10 +95,11 @@ export default function IncomingDocumentForm({
   );
   const [silos, setSilos] = useState<Silo[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [receiptDate, setReceiptDate] = useState(
-    initial?.document_receipt_date
-      ? String(initial.document_receipt_date).slice(0, 10)
-      : new Date().toISOString().slice(0, 10)
+  const initialReceiptDate = initial?.document_receipt_date
+    ? new Date(String(initial.document_receipt_date))
+    : new Date();
+  const [receiptDate, setReceiptDate] = useState<Date | undefined>(
+    isNaN(initialReceiptDate.getTime()) ? new Date() : initialReceiptDate
   );
   const [titleValue, setTitleValue] = useState(
     initial?.title ? String(initial.title) : ""
@@ -141,13 +138,13 @@ export default function IncomingDocumentForm({
   const [doItems, setDoItems] = useState<DoItem[]>([]);
   const nextDisabled =
     isView ||
-    receiptDate.trim() === "" ||
+    !receiptDate ||
     titleValue.trim() === "" ||
     documentTypeId.trim() === "" ||
     senderId.trim() === "";
   const baseInfo = {
     title: titleValue || "",
-    date: receiptDate || "",
+    date: receiptDate ? format(receiptDate, "yyyy-MM-dd") : "",
     docType:
       docTypes.find((dt) => String(dt.id) === documentTypeId)?.title ||
       documentTypeId ||
@@ -184,6 +181,14 @@ export default function IncomingDocumentForm({
     no_do: item.no_do,
     no_pid: item.no_pid
   }));
+  const senderOptions = React.useMemo(
+    () =>
+      senders.map((sender) => ({
+        value: String(sender.id),
+        label: sender.name
+      })),
+    [senders]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -249,7 +254,9 @@ export default function IncomingDocumentForm({
       return;
     }
     const user_id = userId.trim();
-    const document_receipt_date = receiptDate.trim();
+    const document_receipt_date = receiptDate
+      ? format(receiptDate, "yyyy-MM-dd")
+      : "";
     const document_type_id = documentTypeId.trim();
     const sender_id = senderId.trim();
     const qty = qtyValue.trim() ? Number(qtyValue.trim()) : undefined;
@@ -374,10 +381,14 @@ export default function IncomingDocumentForm({
               userId={userId}
               setReceiptDate={setReceiptDate}
               receiptDate={receiptDate}
+              titleValue={titleValue}
               setTitleValue={setTitleValue}
+              noteValue={noteValue}
               setQtyValue={setQtyValue}
               setNoteValue={setNoteValue}
+              descriptionValue={descriptionValue}
               setDescriptionValue={setDescriptionValue}
+              senderOptions={senderOptions}
             />
           )}
           {section === "next" && (
@@ -575,10 +586,14 @@ export function IncomingDocumentFields({
   userId,
   setReceiptDate,
   receiptDate,
+  titleValue,
   setTitleValue,
+  noteValue,
   setQtyValue,
   setNoteValue,
-  setDescriptionValue
+  descriptionValue,
+  setDescriptionValue,
+  senderOptions
 }: {
   initial?: Partial<IncomingDocument> & { id?: string };
   isView: boolean;
@@ -589,36 +604,43 @@ export function IncomingDocumentFields({
   senderId: string;
   setSenderId: (value: string) => void;
   userId: string;
-  setReceiptDate: (value: string) => void;
-  receiptDate: string;
+  setReceiptDate: (value: Date | undefined) => void;
+  receiptDate?: Date;
+  titleValue: string;
   setTitleValue: (value: string) => void;
+  noteValue: string;
   setQtyValue: (value: string) => void;
   setNoteValue: (value: string) => void;
+  descriptionValue: string;
   setDescriptionValue: (value: string) => void;
+  senderOptions: Array<{ value: string; label: string }>;
 }) {
   return (
     <FieldGroup className="">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-4">
-          <Field>
-            <FieldLabel htmlFor="document_receipt_date">
-              Receipt Date
-            </FieldLabel>
-            <Input
+          <div className="flex gap-2">
+            <DatePickerInput
+              label="Receipt Date"
               id="document_receipt_date"
               name="document_receipt_date"
-              type="date"
-              placeholder={receiptDate}
-              defaultValue={
-                initial?.document_receipt_date
-                  ? String(initial.document_receipt_date).slice(0, 10)
-                  : ""
-              }
+              value={receiptDate}
+              onChange={setReceiptDate}
+              placeholder="YYYY-MM-DD"
               disabled={isView}
               required
-              onChange={(e) => setReceiptDate(e.currentTarget.value)}
+              className="w-full"
             />
-          </Field>
+            <FieldInput
+              label="Title"
+              id="title"
+              name="title"
+              placeholder="Title"
+              value={titleValue}
+              disabled={isView}
+              onChange={setTitleValue}
+            />
+          </div>
 
           <Field className="hidden">
             <FieldLabel htmlFor="user_id">User</FieldLabel>
@@ -631,89 +653,70 @@ export function IncomingDocumentFields({
               required
             />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="document_type_id">Document Type</FieldLabel>
-            <Select value={documentTypeId} onValueChange={setDocumentTypeId}>
-              <SelectTrigger disabled={isView}>
-                <SelectValue placeholder="Choose document type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {docTypes.map((dt) => (
-                    <SelectItem key={dt.id} value={dt.id}>
-                      {dt.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <input
-              type="hidden"
+          <div className="flex gap-2">
+            <FieldSelectInput
+              label="Document Type"
+              id="document_type_id"
               name="document_type_id"
               value={documentTypeId}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="title">Title</FieldLabel>
-            <Input
-              id="title"
-              name="title"
-              placeholder="Title"
-              defaultValue={initial?.title ? String(initial.title) : ""}
+              onChange={setDocumentTypeId}
+              placeholder="Choose document type"
               disabled={isView}
-              onChange={(e) => setTitleValue(e.currentTarget.value)}
+              required
+              className="w-full"
+              options={docTypes.map((dt) => ({
+                value: String(dt.id),
+                label: dt.title
+              }))}
+              actionButton={
+                <FormDialog
+                  title="Add New Document Type"
+                  description="Add a new document type for incoming documents."
+                  trigger={
+                    <Button className="" size="icon" variant="outline">
+                      <Plus />
+                    </Button>
+                  }
+                  formFields={<DocumentTypeForm />}
+                />
+              }
             />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="sender_id">Sender</FieldLabel>
-            <Select value={senderId} onValueChange={setSenderId}>
-              <SelectTrigger disabled={isView}>
-                <SelectValue placeholder="Choose sender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {senders.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <input type="hidden" name="sender_id" value={senderId} />
-          </Field>
+
+            <FieldSelectInput
+              label="Sender"
+              id="sender_id"
+              name="sender_id"
+              value={senderId}
+              onChange={setSenderId}
+              placeholder="Choose sender"
+              disabled={isView}
+              required
+              className="w-full"
+              options={senderOptions}
+            />
+          </div>
         </div>
         <div className="space-y-4">
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-optional-comments">
-              Note
-            </FieldLabel>
-            <Textarea
-              id="note"
-              name="note"
-              placeholder="Note"
-              defaultValue={initial?.note ? String(initial.note) : ""}
-              disabled={isView}
-              onChange={(e) => setNoteValue(e.currentTarget.value)}
-              className="resize-none"
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-optional-comments">
-              Description
-            </FieldLabel>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Description"
-              defaultValue={
-                initial?.description ? String(initial.description) : ""
-              }
-              disabled={isView}
-              onChange={(e) => setDescriptionValue(e.currentTarget.value)}
-              className="resize-none"
-            />
-          </Field>
+          <FieldInputTextarea
+            label="Note"
+            id="note"
+            name="note"
+            placeholder="Note"
+            value={noteValue}
+            disabled={isView}
+            onChange={setNoteValue}
+            className="resize-none"
+          />
+          <FieldInputTextarea
+            label="Description"
+            id="description"
+            name="description"
+            placeholder="Description"
+            value={descriptionValue}
+            disabled={isView}
+            onChange={setDescriptionValue}
+            className="resize-none"
+          />
         </div>
       </div>
     </FieldGroup>
@@ -779,65 +782,53 @@ export function InvoiceField({
     <FieldGroup className="mt-2">
       <FieldSet className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-            <Select value={siloId} onValueChange={setSiloId}>
-              <SelectTrigger id="checkout-7j9-exp-year-f59">
-                <SelectValue placeholder="Silo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {silos.map((silo) => (
-                    <SelectItem key={silo.id} value={silo.id}>
-                      {silo.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Vendor</FieldLabel>
-            <Select value={vendorId} onValueChange={setVendorId}>
-              <SelectTrigger id="checkout-7j9-exp-year-f59">
-                <SelectValue placeholder="Vendor or Patner name" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name || vendor.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
+          <FieldSelectInput
+            label="Silo"
+            id="invoice-silo"
+            value={siloId}
+            onChange={setSiloId}
+            placeholder="Silo"
+            options={silos.map((silo) => ({
+              value: String(silo.id),
+              label: silo.title
+            }))}
+          />
+          <FieldSelectInput
+            label="Vendor"
+            id="invoice-vendor"
+            value={vendorId}
+            onChange={setVendorId}
+            placeholder="Vendor or Patner name"
+            options={vendors.map((vendor) => ({
+              value: String(vendor.id),
+              label: vendor.name || vendor.title || String(vendor.id)
+            }))}
+          />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-              Invoice Number
-            </FieldLabel>
-            <Input
-              id="checkout-7j9-card-name-43j"
-              placeholder="INV-0000"
-              value={noInvoice}
-              onChange={(e) => setNoInvoice(e.currentTarget.value)}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-              PO Number
-            </FieldLabel>
-            <Input
-              id="checkout-7j9-card-number-uw1"
-              placeholder="PO-0000"
-              value={noPo}
-              onChange={(e) => setNoPo(e.currentTarget.value)}
-            />
-          </Field>
+          <FieldInput
+            label="Invoice Number"
+            id="invoice-number"
+            placeholder="INV-0000"
+            value={noInvoice}
+            onChange={setNoInvoice}
+          />
+          <FieldInput
+            label="PO Number"
+            id="po-number"
+            placeholder="PO-0000"
+            value={noPo}
+            onChange={setNoPo}
+          />
         </div>
+        <DatePickerInput
+          label="Date"
+          id="invoice-date"
+          value={date}
+          onChange={setDate}
+          placeholder="YYYY-MM-DD"
+          className="w-52"
+        />
       </FieldSet>
       <div className="flex items-end justify-end gap-4">
         <ButtonGroup>
@@ -878,48 +869,43 @@ export function PlField({
     <FieldGroup className="mt-2">
       <FieldSet className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-exp-year-f59">Silo</FieldLabel>
-            <Select value={siloId} onValueChange={setSiloId}>
-              <SelectTrigger id="checkout-7j9-exp-year-f59">
-                <SelectValue placeholder="Silo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {silos.map((silo) => (
-                    <SelectItem key={silo.id} value={silo.id}>
-                      {silo.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-              Ship Ref
-            </FieldLabel>
-            <Input
-              id="checkout-7j9-card-number-uw1"
-              placeholder="REF-0000"
-              value={shipRef}
-              onChange={(e) => setShipRef(e.currentTarget.value)}
-            />
-          </Field>
+          <FieldSelectInput
+            label="Silo"
+            id="pl-silo"
+            value={siloId}
+            onChange={setSiloId}
+            placeholder="Silo"
+            options={silos.map((silo) => ({
+              value: String(silo.id),
+              label: silo.title
+            }))}
+          />
+          <FieldInput
+            label="Ship Ref"
+            id="ship-ref"
+            placeholder="REF-0000"
+            value={shipRef}
+            onChange={setShipRef}
+          />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Field className="col-span-2">
-            <FieldLabel htmlFor="checkout-7j9-card-name-43j">
-              Nomor Packing List
-            </FieldLabel>
-            <Input
-              id="checkout-7j9-card-name-43j"
-              placeholder="PL-0000"
-              value={noPl}
-              onChange={(e) => setNoPl(e.currentTarget.value)}
-            />
-          </Field>
+          <FieldInput
+            label="Nomor Packing List"
+            id="pl-number"
+            placeholder="PL-0000"
+            value={noPl}
+            onChange={setNoPl}
+            className="col-span-2"
+          />
         </div>
+        <DatePickerInput
+          label="Date"
+          id="pl-date"
+          value={date}
+          onChange={setDate}
+          placeholder="YYYY-MM-DD"
+          className="w-52"
+        />
       </FieldSet>
       <div className="flex items-end justify-end gap-4">
         <ButtonGroup>
@@ -966,61 +952,53 @@ export function DoField({
     <FieldGroup className="mt-2">
       <FieldSet className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="do-number">Nomor Delivery Order</FieldLabel>
-            <Input
-              id="do-number"
-              placeholder="DO-0000"
-              value={noDo}
-              onChange={(e) => setNoDo(e.currentTarget.value)}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="do-pid">Nomor PID</FieldLabel>
-            <Input
-              id="do-pid"
-              placeholder="PID-0000"
-              value={noPid}
-              onChange={(e) => setNoPid(e.currentTarget.value)}
-            />
-          </Field>
+          <FieldInput
+            label="Nomor Delivery Order"
+            id="do-number"
+            placeholder="DO-0000"
+            value={noDo}
+            onChange={setNoDo}
+          />
+          <FieldInput
+            label="Nomor PID"
+            id="do-pid"
+            placeholder="PID-0000"
+            value={noPid}
+            onChange={setNoPid}
+          />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Field>
-            <FieldLabel htmlFor="do-silo">Silo</FieldLabel>
-            <Select value={siloId} onValueChange={setSiloId}>
-              <SelectTrigger id="do-silo">
-                <SelectValue placeholder="Silo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {silos.map((silo) => (
-                    <SelectItem key={silo.id} value={silo.id}>
-                      {silo.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="do-vendor">Vendor</FieldLabel>
-            <Select value={vendorId} onValueChange={setVendorId}>
-              <SelectTrigger id="do-vendor">
-                <SelectValue placeholder="Vendor or Patner name" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name || vendor.title}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
+          <FieldSelectInput
+            label="Silo"
+            id="do-silo"
+            value={siloId}
+            onChange={setSiloId}
+            placeholder="Silo"
+            options={silos.map((silo) => ({
+              value: String(silo.id),
+              label: silo.title
+            }))}
+          />
+          <FieldSelectInput
+            label="Vendor"
+            id="do-vendor"
+            value={vendorId}
+            onChange={setVendorId}
+            placeholder="Vendor or Patner name"
+            options={vendors.map((vendor) => ({
+              value: String(vendor.id),
+              label: vendor.name || vendor.title || String(vendor.id)
+            }))}
+          />
         </div>
+        <DatePickerInput
+          label="Date"
+          id="do-date"
+          value={date}
+          onChange={setDate}
+          placeholder="YYYY-MM-DD"
+          className="w-52"
+        />
         <div className="flex items-end justify-end gap-4">
           <ButtonGroup>
             <Button variant="secondary" type="button" onClick={onAdd}>
