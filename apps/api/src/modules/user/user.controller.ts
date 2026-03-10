@@ -17,6 +17,14 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+function stripPassword(data: Record<string, unknown>) {
+  const safe = { ...data } as { password?: unknown };
+  if ('password' in safe) {
+    delete safe.password;
+  }
+  return safe;
+}
+
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -38,10 +46,7 @@ export class UserController {
       throw new BadRequestException('Field "password" wajib diisi');
     }
     const created = await this.userService.create(createUserDto);
-    const { password: _pwdCreate, ...safe } = (created ?? {}) as Record<
-      string,
-      unknown
-    >;
+    const safe = stripPassword((created ?? {}) as Record<string, unknown>);
     return res.status(201).json({
       status: true,
       code: 201,
@@ -55,13 +60,7 @@ export class UserController {
     try {
       const data = await this.userService.findAll();
       const safeData = Array.isArray(data)
-        ? data.map((u) => {
-            const { password: _pwdList, ...rest } = (u ?? {}) as Record<
-              string,
-              unknown
-            >;
-            return rest;
-          })
+        ? data.map((u) => stripPassword((u ?? {}) as Record<string, unknown>))
         : [];
       return res.status(200).json({
         status: true,
@@ -99,10 +98,7 @@ export class UserController {
           data: {},
         });
       }
-      const { password: _pwdDetail, ...safe } = (data ?? {}) as Record<
-        string,
-        unknown
-      >;
+      const safe = stripPassword((data ?? {}) as Record<string, unknown>);
       return res.status(200).json({
         status: true,
         code: 200,
@@ -178,10 +174,7 @@ export class UserController {
       });
     }
     const updated = await this.userService.update(id, sanitized);
-    const { password: _pwdUpdate, ...safe } = (updated ?? {}) as Record<
-      string,
-      unknown
-    >;
+    const safe = stripPassword((updated ?? {}) as Record<string, unknown>);
     return res.status(200).json({
       status: true,
       code: 200,

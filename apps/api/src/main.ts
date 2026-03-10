@@ -35,7 +35,8 @@ async function bootstrap() {
       const next = await resolvePort(port + 1);
       await app.listen(next, '0.0.0.0');
     } else {
-      throw new Error(String(err));
+      const message = e instanceof Error ? e.message : 'Failed to start server';
+      throw new Error(message);
     }
   }
   console.log(`Application is running on: ${await app.getUrl()}`);

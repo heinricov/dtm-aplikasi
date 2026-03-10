@@ -160,11 +160,6 @@ function RowActions({ item }: { item: ReceiptInvoice }) {
 
 export const columns: ColumnDef<ReceiptInvoice>[] = [
   {
-    accessorKey: "scan_date",
-    header: "Receipt Date",
-    cell: ({ row }) => <div>{formatDate(row.getValue("scan_date"))}</div>
-  },
-  {
     accessorKey: "incoming_document",
     header: "Incoming Document",
     cell: ({ row }) => {

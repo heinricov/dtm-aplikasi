@@ -1,17 +1,18 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
-  id         String   @id @default(uuid()) @db.Uuid
-  name       String   @db.VarChar(150)
-  email      String   @unique @db.VarChar(150)
-  password   String   @db.VarChar(255)
-  role       String?  @db.VarChar(100)
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -19,9 +20,9 @@ model User {
 }
 
 model DocumentType {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  id          String   @id @default(uuid())
+  title       String
+  description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -29,9 +30,9 @@ model DocumentType {
 }
 
 model Silo {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  id          String   @id @default(uuid())
+  title       String
+  description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -42,9 +43,9 @@ model Silo {
 }
 
 model Sender {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  id          String   @id @default(uuid())
+  name        String
+  description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -52,10 +53,10 @@ model Sender {
 }
 
 model Vendor {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(150)
-  name        String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  id          String   @id @default(uuid())
+  title       String
+  name        String
+  description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -64,9 +65,9 @@ model Vendor {
 }
 
 model Bank {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  id          String   @id @default(uuid())
+  title       String
+  description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -74,15 +75,15 @@ model Bank {
 }
 
 model IncomingDocument {
-  id                    String   @id @default(uuid()) @db.Uuid
-  user_id               String   @db.Uuid
-  document_receipt_date DateTime @db.Date
-  title                 String?  @db.VarChar(150)   // baru
-  document_type_id      String   @db.Uuid
-  sender_id             String   @db.Uuid
+  id                    String   @id @default(uuid())
+  user_id               String
+  document_receipt_date DateTime
+  title                 String?  // baru
+  document_type_id      String
+  sender_id             String
   qty                   Int?
-  note                  String?  @db.VarChar(255)   // baru
-  description           String?  @db.VarChar(255)
+  note                  String?  // baru
+  description           String?
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
 
@@ -98,15 +99,15 @@ model IncomingDocument {
 }
 
 model ReceiptInvoice {
-  id                   String    @id @default(uuid()) @db.Uuid
-  incoming_document_id String    @db.Uuid
-  silo_id              String    @db.Uuid
-  no_invoice           String?   @db.VarChar(150)
-  no_po                String?   @db.VarChar(150)
-  vendor_id            String    @db.Uuid
-  scan_date            DateTime? @db.Date
-  upload_date          DateTime? @db.Date
-  description          String?   @db.VarChar(255)
+  id                   String    @id @default(uuid())
+  incoming_document_id String
+  silo_id              String
+  no_invoice           String?
+  no_po                String?
+  vendor_id            String
+  scan_date            DateTime?
+  upload_date          DateTime?
+  description          String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -116,15 +117,15 @@ model ReceiptInvoice {
 }
 
 model ReceiptDo {
-  id                   String    @id @default(uuid()) @db.Uuid
-  incoming_document_id String    @db.Uuid
-  no_do                String    @db.VarChar(150)
-  no_pid               String    @db.VarChar(150)
-  silo_id              String    @db.Uuid
-  vendor_id            String    @db.Uuid
-  scan_date            DateTime? @db.Date
-  upload_date          DateTime? @db.Date
-  description          String?   @db.VarChar(255)
+  id                   String    @id @default(uuid())
+  incoming_document_id String
+  no_do                String
+  no_pid               String
+  silo_id              String
+  vendor_id            String
+  scan_date            DateTime?
+  upload_date          DateTime?
+  description          String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -134,14 +135,14 @@ model ReceiptDo {
 }
 
 model ReceiptPl {
-  id                   String    @id @default(uuid()) @db.Uuid
-  incoming_document_id String    @db.Uuid
-  silo_id              String    @db.Uuid
-  no_pl                String    @db.VarChar(150)
-  ship_ref             String    @db.VarChar(150)
-  scan_date            DateTime? @db.Date
-  upload_date          DateTime? @db.Date
-  description          String?   @db.VarChar(255)
+  id                   String    @id @default(uuid())
+  incoming_document_id String
+  silo_id              String
+  no_pl                String
+  ship_ref             String
+  scan_date            DateTime?
+  upload_date          DateTime?
+  description          String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -150,15 +151,15 @@ model ReceiptPl {
 }
 
 model ReceiptVoucherPayment {
-  id                   String    @id @default(uuid()) @db.Uuid
-  incoming_document_id String    @db.Uuid
-  silo_id              String    @db.Uuid
-  bank_id              String    @db.Uuid
+  id                   String    @id @default(uuid())
+  incoming_document_id String
+  silo_id              String
+  bank_id              String
   month                Int
   year                 Int
-  scan_date            DateTime? @db.Date
-  upload_date          DateTime? @db.Date
-  description          String?   @db.VarChar(255)
+  scan_date            DateTime?
+  upload_date          DateTime?
+  description          String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -168,12 +169,12 @@ model ReceiptVoucherPayment {
 }
 
 model ReceiptOtherDocument {
-  id                   String    @id @default(uuid()) @db.Uuid
-  incoming_document_id String    @db.Uuid
-  no_document          String    @db.VarChar(150)
-  scan_date            DateTime? @db.Date
-  upload_date          DateTime? @db.Date
-  description          String?   @db.VarChar(255)
+  id                   String    @id @default(uuid())
+  incoming_document_id String
+  no_document          String
+  scan_date            DateTime?
+  upload_date          DateTime?
+  description          String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 

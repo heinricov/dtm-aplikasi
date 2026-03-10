@@ -45,6 +45,9 @@ import { FieldInputTextarea } from "../ui/field-input-textarea";
 import { FormDialog } from "../form-dialog";
 import DocumentTypeForm from "../form/document-type";
 import { Plus } from "lucide-react";
+import SenderForm from "./sender";
+import VendorForm from "./vendor";
+import SiloForm from "./silo";
 
 type InvoiceItem = {
   silo_id: string;
@@ -693,6 +696,18 @@ export function IncomingDocumentFields({
               required
               className="w-full"
               options={senderOptions}
+              actionButton={
+                <FormDialog
+                  title="Add New Sender"
+                  description="Add a new sender for incoming documents."
+                  trigger={
+                    <Button className="" size="icon" variant="outline">
+                      <Plus />
+                    </Button>
+                  }
+                  formFields={<SenderForm />}
+                />
+              }
             />
           </div>
         </div>
@@ -781,7 +796,7 @@ export function InvoiceField({
   return (
     <FieldGroup className="mt-2">
       <FieldSet className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <FieldSelectInput
             label="Silo"
             id="invoice-silo"
@@ -792,6 +807,18 @@ export function InvoiceField({
               value: String(silo.id),
               label: silo.title
             }))}
+            actionButton={
+              <FormDialog
+                title="Add New Silo"
+                description="Add a new silo for incoming documents."
+                trigger={
+                  <Button className="" size="icon" variant="outline">
+                    <Plus />
+                  </Button>
+                }
+                formFields={<SiloForm />}
+              />
+            }
           />
           <FieldSelectInput
             label="Vendor"
@@ -803,9 +830,19 @@ export function InvoiceField({
               value: String(vendor.id),
               label: vendor.name || vendor.title || String(vendor.id)
             }))}
+            actionButton={
+              <FormDialog
+                title="Add New Vendor"
+                description="Add a new vendor for incoming documents."
+                trigger={
+                  <Button className="" size="icon" variant="outline">
+                    <Plus />
+                  </Button>
+                }
+                formFields={<VendorForm />}
+              />
+            }
           />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
           <FieldInput
             label="Invoice Number"
             id="invoice-number"
@@ -821,14 +858,6 @@ export function InvoiceField({
             onChange={setNoPo}
           />
         </div>
-        <DatePickerInput
-          label="Date"
-          id="invoice-date"
-          value={date}
-          onChange={setDate}
-          placeholder="YYYY-MM-DD"
-          className="w-52"
-        />
       </FieldSet>
       <div className="flex items-end justify-end gap-4">
         <ButtonGroup>
