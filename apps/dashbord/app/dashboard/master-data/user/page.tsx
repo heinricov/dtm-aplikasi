@@ -1,18 +1,26 @@
+"use client";
 import UserForm from "@/components/form/user";
 import { FormDialog } from "@/components/form-dialog";
 import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { columns } from "@/components/table/user";
-import { getUsers, type User } from "@/services/user";
+import { columns, getUserRowId } from "@/components/table/user";
+import { deleteUsers, getUsers, type User } from "@/services/user";
+import { useEffect, useState } from "react";
 
-export default async function page() {
-  let data: User[] = [];
-  try {
-    data = await getUsers();
-  } catch {
-    data = [];
-  }
+export default function page() {
+  const [data, setData] = useState<User[]>([]);
+  const loadData = async () => {
+    try {
+      const list = await getUsers();
+      setData(list);
+    } catch {
+      setData([]);
+    }
+  };
+  useEffect(() => {
+    void loadData();
+  }, []);
   return (
     <div className="mt-10">
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">
@@ -31,7 +39,16 @@ export default async function page() {
           />
         </div>
         <Separator className="my-4" />
-        <DataTable columns={columns} data={data} filterKey="name" />
+        <DataTable
+          columns={columns}
+          data={data}
+          filterKey="name"
+          getRowId={getUserRowId}
+          onBulkDelete={async (ids) => {
+            await deleteUsers(ids);
+            await loadData();
+          }}
+        />
       </div>
     </div>
   );

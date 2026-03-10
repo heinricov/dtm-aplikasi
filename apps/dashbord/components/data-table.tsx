@@ -32,18 +32,52 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+import { toast } from "sonner";
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
   data: TData[];
   filterKey?: string;
+  getRowId?: (row: TData) => string;
+  onBulkDelete?: (ids: string[]) => Promise<void>;
 }
 
 export default function DataTable<TData>({
   columns,
   data,
-  filterKey
+  filterKey,
+  getRowId,
+  onBulkDelete
 }: DataTableProps<TData>) {
+  const selectionColumn = React.useMemo<ColumnDef<TData>>(
+    () => ({
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Select all"
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label="Select row"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false
+    }),
+    []
+  );
+  const columnsWithSelect = React.useMemo(
+    () => [selectionColumn, ...columns],
+    [columns, selectionColumn]
+  );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -51,10 +85,11 @@ export default function DataTable<TData>({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [bulkDeleting, setBulkDeleting] = React.useState(false);
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelect,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -63,6 +98,10 @@ export default function DataTable<TData>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: getRowId
+      ? (row, index) => getRowId(row)
+      : (row, index) => String(index),
     state: {
       sorting,
       columnFilters,
@@ -70,6 +109,28 @@ export default function DataTable<TData>({
       rowSelection
     }
   });
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedIds = selectedRows
+    .map((row) => {
+      const original = row.original as TData;
+      return getRowId ? getRowId(original) : (original as { id?: string }).id;
+    })
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const handleBulkDelete = async () => {
+    if (!onBulkDelete || selectedIds.length === 0) return;
+    try {
+      setBulkDeleting(true);
+      await onBulkDelete(selectedIds);
+      table.resetRowSelection();
+      toast.success("Bulk delete berhasil");
+    } catch (err) {
+      const message =
+        (err as { message?: string })?.message ?? "Bulk delete gagal";
+      toast.error(message);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -90,6 +151,18 @@ export default function DataTable<TData>({
             }
           />
         ) : null}
+        {onBulkDelete && selectedIds.length > 0 ? (
+          <Button
+            className="text-red-500"
+            type="button"
+            variant="outline"
+            disabled={bulkDeleting}
+            onClick={handleBulkDelete}
+          >
+            {bulkDeleting ? "Deleting..." : `Delete (${selectedIds.length})`}
+          </Button>
+        ) : null}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="ml-auto" variant="outline">
@@ -158,7 +231,7 @@ export default function DataTable<TData>({
               <TableRow>
                 <TableCell
                   className="h-24 text-center"
-                  colSpan={columns.length}
+                  colSpan={columnsWithSelect.length}
                 >
                   No results.
                 </TableCell>

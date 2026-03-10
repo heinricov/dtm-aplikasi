@@ -68,3 +68,7 @@ export async function deleteDocumentType(id: UUID): Promise<void> {
     method: "DELETE"
   });
 }
+
+export async function deleteDocumentTypes(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteDocumentType(id)));
+}

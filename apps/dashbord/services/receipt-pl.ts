@@ -91,16 +91,13 @@ export async function updateReceiptPl(
         ? payload.upload_date.toISOString()
         : payload.upload_date
   };
-  const res = await apiRequest<ApiEnvelope<ReceiptPl>>(
-    `${RESOURCE}/${id}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(toSend)
-    }
-  );
+  const res = await apiRequest<ApiEnvelope<ReceiptPl>>(`${RESOURCE}/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(toSend)
+  });
   return res.data;
 }
 
@@ -108,4 +105,8 @@ export async function deleteReceiptPl(id: UUID): Promise<void> {
   await apiRequest<ApiEnvelope<Record<string, never>>>(`${RESOURCE}/${id}`, {
     method: "DELETE"
   });
+}
+
+export async function deleteReceiptPls(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteReceiptPl(id)));
 }

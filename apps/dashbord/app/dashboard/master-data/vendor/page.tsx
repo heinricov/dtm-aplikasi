@@ -1,18 +1,26 @@
+"use client";
 import { FormDialog } from "@/components/form-dialog";
 import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { columns } from "@/components/table/vendor";
-import { getVendors, type Vendor } from "@/services/vendor";
+import { columns, getVendorRowId } from "@/components/table/vendor";
+import { deleteVendors, getVendors, type Vendor } from "@/services/vendor";
 import VendorForm from "@/components/form/vendor";
+import { useEffect, useState } from "react";
 
-export default async function page() {
-  let data: Vendor[] = [];
-  try {
-    data = await getVendors();
-  } catch {
-    data = [];
-  }
+export default function page() {
+  const [data, setData] = useState<Vendor[]>([]);
+  const loadData = async () => {
+    try {
+      const list = await getVendors();
+      setData(list);
+    } catch {
+      setData([]);
+    }
+  };
+  useEffect(() => {
+    void loadData();
+  }, []);
   return (
     <div className="mt-10">
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">
@@ -31,7 +39,16 @@ export default async function page() {
           />
         </div>
         <Separator className="my-4" />
-        <DataTable columns={columns} data={data} filterKey="title" />
+        <DataTable
+          columns={columns}
+          data={data}
+          filterKey="title"
+          getRowId={getVendorRowId}
+          onBulkDelete={async (ids) => {
+            await deleteVendors(ids);
+            await loadData();
+          }}
+        />
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
@@ -87,47 +86,27 @@ function RowActions({ item }: { item: Bank }) {
         confirmLabel="Delete"
         onConfirm={onDelete}
       />
-      <FormDialog
-        open={openView}
-        onOpenChange={setOpenView}
-        title="View Bank"
-        description="Detail bank"
-        formFields={<BankForm mode="view" initial={item} />}
-      />
-      <FormDialog
-        open={openEdit}
-        onOpenChange={setOpenEdit}
-        title="Edit Bank"
-        description="Update the bank"
-        formFields={<BankForm mode="edit" initial={item} />}
-      />
+      <div className="hidden">
+        <FormDialog
+          open={openView}
+          onOpenChange={setOpenView}
+          title="View Bank"
+          description="Detail bank"
+          formFields={<BankForm mode="view" initial={item} />}
+        />
+        <FormDialog
+          open={openEdit}
+          onOpenChange={setOpenEdit}
+          title="Edit Bank"
+          description="Update the bank"
+          formFields={<BankForm mode="edit" initial={item} />}
+        />
+      </div>
     </>
   );
 }
 
 export const columns: ColumnDef<Bank>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false
-  },
   {
     accessorKey: "title",
     header: "Title",
@@ -146,3 +125,5 @@ export const columns: ColumnDef<Bank>[] = [
     cell: ({ row }) => <RowActions item={row.original} />
   }
 ];
+
+export const getBankRowId = (row: Bank) => row.id;

@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
@@ -112,28 +111,6 @@ function RowActions({ item }: { item: Vendor }) {
 
 export const columns: ColumnDef<Vendor>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false
-  },
-  {
     accessorKey: "title",
     header: "Title",
     cell: ({ row }) => <div className="capitalize">{row.getValue("title")}</div>
@@ -156,3 +133,5 @@ export const columns: ColumnDef<Vendor>[] = [
     cell: ({ row }) => <RowActions item={row.original} />
   }
 ];
+
+export const getVendorRowId = (row: Vendor) => row.id;

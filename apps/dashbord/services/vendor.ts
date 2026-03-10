@@ -59,3 +59,7 @@ export async function deleteVendor(id: UUID): Promise<void> {
     method: "DELETE"
   });
 }
+
+export async function deleteVendors(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteVendor(id)));
+}

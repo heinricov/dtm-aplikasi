@@ -113,3 +113,7 @@ export async function deleteReceiptDo(id: UUID): Promise<void> {
     method: "DELETE"
   });
 }
+
+export async function deleteReceiptDos(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteReceiptDo(id)));
+}

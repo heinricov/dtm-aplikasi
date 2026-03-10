@@ -119,3 +119,6 @@ export async function deleteReceiptInvoice(id: UUID): Promise<void> {
   });
 }
 
+export async function deleteReceiptInvoices(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteReceiptInvoice(id)));
+}

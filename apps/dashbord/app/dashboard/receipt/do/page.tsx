@@ -1,15 +1,27 @@
+"use client";
 import DataTable from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
-import { columns } from "@/components/table/receipt-do";
-import { getReceiptDos, type ReceiptDo } from "@/services/receipt-do";
+import { columns, getReceiptDoRowId } from "@/components/table/receipt-do";
+import {
+  deleteReceiptDos,
+  getReceiptDos,
+  type ReceiptDo
+} from "@/services/receipt-do";
+import { useEffect, useState } from "react";
 
-export default async function page() {
-  let data: ReceiptDo[] = [];
-  try {
-    data = await getReceiptDos();
-  } catch {
-    data = [];
-  }
+export default function page() {
+  const [data, setData] = useState<ReceiptDo[]>([]);
+  const loadData = async () => {
+    try {
+      const list = await getReceiptDos();
+      setData(list);
+    } catch {
+      setData([]);
+    }
+  };
+  useEffect(() => {
+    void loadData();
+  }, []);
   return (
     <div className="mt-10">
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">
@@ -22,7 +34,16 @@ export default async function page() {
           </div>
         </div>
         <Separator className="my-4" />
-        <DataTable columns={columns} data={data} filterKey="description" />
+        <DataTable
+          columns={columns}
+          data={data}
+          filterKey="description"
+          getRowId={getReceiptDoRowId}
+          onBulkDelete={async (ids) => {
+            await deleteReceiptDos(ids);
+            await loadData();
+          }}
+        />
       </div>
     </div>
   );

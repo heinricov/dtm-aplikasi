@@ -106,3 +106,7 @@ export async function deleteIncomingDocument(id: UUID): Promise<void> {
     method: "DELETE"
   });
 }
+
+export async function deleteIncomingDocuments(ids: UUID[]): Promise<void> {
+  await Promise.all(ids.map((id) => deleteIncomingDocument(id)));
+}

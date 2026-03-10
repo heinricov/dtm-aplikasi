@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Eye, MoreHorizontal, Trash } from "lucide-react";
 import { useState } from "react";
@@ -142,28 +141,6 @@ function RowActions({ item }: { item: ReceiptPl }) {
 
 export const columns: ColumnDef<ReceiptPl>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false
-  },
-  {
     accessorKey: "scan_date",
     header: "Receipt Date",
     cell: ({ row }) => <div>{formatDate(row.getValue("scan_date"))}</div>
@@ -211,3 +188,5 @@ export const columns: ColumnDef<ReceiptPl>[] = [
     cell: ({ row }) => <RowActions item={row.original} />
   }
 ];
+
+export const getReceiptPlRowId = (row: ReceiptPl) => row.id;
