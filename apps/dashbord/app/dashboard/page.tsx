@@ -4,7 +4,7 @@ import TabsDashboard from "@/components/tabs-dashboard";
 export default function page() {
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-5 mt-5">
         <ChartDashboard />
       </div>
       <TabsDashboard />

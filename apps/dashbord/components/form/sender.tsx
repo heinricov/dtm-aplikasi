@@ -12,10 +12,12 @@ import { toast } from "sonner";
 
 export default function SenderForm({
   onSuccessClose,
+  onSuccess,
   mode = "create",
   initial
 }: {
   onSuccessClose?: () => void;
+  onSuccess?: (value: Sender) => void;
   mode?: "create" | "edit" | "view";
   initial?: Partial<Sender> & { id?: string };
 }) {
@@ -35,18 +37,26 @@ export default function SenderForm({
     try {
       setSubmitting(true);
       if (isEdit && initial?.id) {
-        await updateSender(initial.id as string, { name, description });
+        const updated = await updateSender(initial.id as string, {
+          name,
+          description
+        });
+        onSuccess?.(updated);
         toast.success("Sender updated successfully");
       } else {
-        await createSender({
+        const created = await createSender({
           name,
           description: description || undefined
         });
+        onSuccess?.(created);
         toast.success("Sender created successfully");
       }
       form.reset();
       router.refresh();
       onSuccessClose?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("sender:updated"));
+      }
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";

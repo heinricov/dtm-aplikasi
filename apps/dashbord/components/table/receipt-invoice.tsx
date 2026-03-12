@@ -146,7 +146,6 @@ function RowActions({ item }: { item: ReceiptInvoice }) {
       />
       <div className="hidden">
         <FormDialog
-          maxWidth="5xl"
           open={openView}
           onOpenChange={setOpenView}
           title="View Receipt Invoice"

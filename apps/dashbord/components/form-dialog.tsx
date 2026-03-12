@@ -18,7 +18,7 @@ export function FormDialog({
   trigger,
   open: openProp,
   onOpenChange,
-  maxWidth
+  widthLayout
 }: {
   title: string;
   description: string;
@@ -28,7 +28,7 @@ export function FormDialog({
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  maxWidth?: "4xl" | "5xl" | "6xl" | "7xl";
+  widthLayout?: "4xl" | "5xl" | "6xl" | "7xl";
 }) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const isControlled = typeof openProp === "boolean";
@@ -60,10 +60,16 @@ export function FormDialog({
     return formFields;
   }, [formFields, close]);
 
-  const widthClass = React.useMemo(
-    () => (maxWidth ? `min-w-${maxWidth}` : "min-w-xl"),
-    [maxWidth]
-  );
+  const widthClass = React.useMemo(() => {
+    if (!widthLayout) return "w-full";
+    const map: Record<string, string> = {
+      "4xl": "w-full min-w-4xl",
+      "5xl": "w-full min-w-5xl",
+      "6xl": "w-full min-w-6xl",
+      "7xl": "w-full min-w-7xl"
+    };
+    return map[widthLayout] ?? "w-full";
+  }, [widthLayout]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

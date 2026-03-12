@@ -91,7 +91,7 @@ function RowActions({ item }: { item: IncomingDocument }) {
       />
       <div className="hidden">
         <FormDialog
-          maxWidth="5xl"
+          widthLayout="5xl"
           open={openView}
           onOpenChange={setOpenView}
           title="View Incoming Document"
@@ -99,12 +99,14 @@ function RowActions({ item }: { item: IncomingDocument }) {
           formFields={<IncomingDocumentForm mode="view" initial={item} />}
         />
         <FormDialog
-          maxWidth="5xl"
+          widthLayout="5xl"
           open={openEdit}
           onOpenChange={setOpenEdit}
           title="Edit Incoming Document"
           description="Update the incoming document"
-          formFields={<IncomingDocumentForm mode="edit" initial={item} />}
+          formFields={
+            <IncomingDocumentForm mode="edit" initial={item} formOnly />
+          }
         />
       </div>
     </>

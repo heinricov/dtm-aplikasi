@@ -16,6 +16,8 @@ import {
 import { NavMenus } from "./nav-menu";
 import { dataMenus } from "./data-menu";
 import { SelectSeparator } from "../ui/select";
+import WrapperRole from "../wrapper-role";
+import { accessRole } from "@/services/access";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -26,7 +28,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SelectSeparator />
       <SidebarContent>
         <NavMenus items={dataMenus.menus} />
-        <NavCollaps title="Data" items={dataMenus.menuData} />
+        <WrapperRole access={accessRole}>
+          <NavCollaps title="Data" items={dataMenus.menuData} />
+        </WrapperRole>
         <NavMain title="Documents" items={dataMenus.documents} />
       </SidebarContent>
       <SelectSeparator />

@@ -26,6 +26,15 @@ export default function page() {
   useEffect(() => {
     void loadData();
   }, []);
+  useEffect(() => {
+    const handler = () => {
+      void loadData();
+    };
+    window.addEventListener("incoming-document:updated", handler);
+    return () => {
+      window.removeEventListener("incoming-document:updated", handler);
+    };
+  }, []);
   return (
     <div className="mt-10">
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">

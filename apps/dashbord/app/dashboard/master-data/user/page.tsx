@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { columns, getUserRowId } from "@/components/table/user";
 import { deleteUsers, getUsers, type User } from "@/services/user";
 import { useEffect, useState } from "react";
+import WrapperRole from "@/components/wrapper-role";
 
 export default function page() {
   const [data, setData] = useState<User[]>([]);
@@ -31,12 +32,14 @@ export default function page() {
               Manage user for incoming documents.
             </p>
           </div>
-          <FormDialog
-            title="Add New Silo"
-            description="Add a new silo for incoming documents."
-            formFields={<UserForm />}
-            trigger={<Button className="mt-4">Add New</Button>}
-          />
+          <WrapperRole>
+            <FormDialog
+              title="Add New Silo"
+              description="Add a new silo for incoming documents."
+              formFields={<UserForm />}
+              trigger={<Button className="mt-4">Add New</Button>}
+            />
+          </WrapperRole>
         </div>
         <Separator className="my-4" />
         <DataTable

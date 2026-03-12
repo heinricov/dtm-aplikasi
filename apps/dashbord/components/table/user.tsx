@@ -16,6 +16,7 @@ import { User, deleteUser } from "@/services/user";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confrim-dialog";
+import WrapperRole from "../wrapper-role";
 
 function RowActions({ item }: { item: User }) {
   const router = useRouter();
@@ -124,8 +125,16 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
-    cell: ({ row }) => <RowActions item={row.original} />
+    header: ({ table }) => (
+      <WrapperRole>
+        <span>Actions</span>
+      </WrapperRole>
+    ),
+    cell: ({ row }) => (
+      <WrapperRole>
+        <RowActions item={row.original} />
+      </WrapperRole>
+    )
   }
 ];
 

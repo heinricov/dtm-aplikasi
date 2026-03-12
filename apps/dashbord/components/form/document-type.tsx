@@ -16,10 +16,12 @@ import { toast } from "sonner";
 
 export default function DocumentTypeForm({
   onSuccessClose,
+  onSuccess,
   mode = "create",
   initial
 }: {
   onSuccessClose?: () => void;
+  onSuccess?: (value: DocumentType) => void;
   mode?: "create" | "edit" | "view";
   initial?: Partial<DocumentType> & { id?: string };
 }) {
@@ -39,22 +41,27 @@ export default function DocumentTypeForm({
     try {
       setSubmitting(true);
       if (isEdit && initial?.id) {
-        await updateDocumentType(initial.id as string, {
+        const updated = await updateDocumentType(initial.id as string, {
           title,
           // Kirimkan string apa adanya agar pengosongan ("" ) ikut tersimpan
           description
         });
+        onSuccess?.(updated);
         toast.success("Document type updated successfully");
       } else {
-        await createDocumentType({
+        const created = await createDocumentType({
           title,
           description: description || undefined
         });
+        onSuccess?.(created);
         toast.success("Document type created successfully");
       }
       form.reset();
       router.refresh();
       onSuccessClose?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("document-type:updated"));
+      }
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";

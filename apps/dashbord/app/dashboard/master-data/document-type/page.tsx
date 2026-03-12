@@ -28,6 +28,15 @@ export default function page() {
   useEffect(() => {
     void loadData();
   }, []);
+  useEffect(() => {
+    const handler = () => {
+      void loadData();
+    };
+    window.addEventListener("document-type:updated", handler);
+    return () => {
+      window.removeEventListener("document-type:updated", handler);
+    };
+  }, []);
   return (
     <div className="mt-10">
       <div className="max-w-6xl mx-auto border border-border rounded-md p-4">
@@ -41,7 +50,13 @@ export default function page() {
           <FormDialog
             title="Add New Document Type"
             description="Add a new document type for incoming documents."
-            formFields={<DocumentTypeForm />}
+            formFields={
+              <DocumentTypeForm
+                onSuccessClose={() => {
+                  void loadData();
+                }}
+              />
+            }
             trigger={<Button className="mt-4">Add New</Button>}
           />
         </div>

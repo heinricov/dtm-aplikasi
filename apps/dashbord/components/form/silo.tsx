@@ -12,10 +12,12 @@ import { toast } from "sonner";
 
 export default function SiloForm({
   onSuccessClose,
+  onSuccess,
   mode = "create",
   initial
 }: {
   onSuccessClose?: () => void;
+  onSuccess?: (value: Silo) => void;
   mode?: "create" | "edit" | "view";
   initial?: Partial<Silo> & { id?: string };
 }) {
@@ -35,18 +37,26 @@ export default function SiloForm({
     try {
       setSubmitting(true);
       if (isEdit && initial?.id) {
-        await updateSilo(initial.id as string, { title, description });
+        const updated = await updateSilo(initial.id as string, {
+          title,
+          description
+        });
+        onSuccess?.(updated);
         toast.success("Silo updated successfully");
       } else {
-        await createSilo({
+        const created = await createSilo({
           title,
           description: description || undefined
         });
+        onSuccess?.(created);
         toast.success("Silo created successfully");
       }
       form.reset();
       router.refresh();
       onSuccessClose?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("silo:updated"));
+      }
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";

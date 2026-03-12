@@ -180,8 +180,14 @@ export class IncomingDocumentController {
     } else if (dto?.document_receipt_date instanceof Date) {
       sanitized.document_receipt_date = dto.document_receipt_date;
     }
+    if (typeof dto?.title === 'string') {
+      sanitized.title = dto.title;
+    }
     if (typeof dto?.qty === 'number') {
       sanitized.qty = dto.qty;
+    }
+    if (typeof dto?.note === 'string') {
+      sanitized.note = dto.note;
     }
     if (typeof dto?.description === 'string') {
       sanitized.description = dto.description;

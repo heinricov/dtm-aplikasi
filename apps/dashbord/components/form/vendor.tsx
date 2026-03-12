@@ -12,10 +12,12 @@ import { toast } from "sonner";
 
 export default function VendorForm({
   onSuccessClose,
+  onSuccess,
   mode = "create",
   initial
 }: {
   onSuccessClose?: () => void;
+  onSuccess?: (value: Vendor) => void;
   mode?: "create" | "edit" | "view";
   initial?: Partial<Vendor> & { id?: string };
 }) {
@@ -36,23 +38,28 @@ export default function VendorForm({
       setSubmitting(true);
       if (isView) return;
       if (isEdit && initial?.id) {
-        await updateVendor(initial.id as string, {
+        const updated = await updateVendor(initial.id as string, {
           title,
           name,
           description
         });
+        onSuccess?.(updated);
         toast.success("Vendor updated successfully");
       } else {
-        await createVendor({
+        const created = await createVendor({
           title,
           name,
           description: description || undefined
         });
+        onSuccess?.(created);
         toast.success("Vendor created successfully");
       }
       form.reset();
       router.refresh();
       onSuccessClose?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("vendor:updated"));
+      }
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to create";

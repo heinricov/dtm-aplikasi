@@ -27,6 +27,9 @@ function RowActions({ item }: { item: DocumentType }) {
       await deleteDocumentType(item.id as string);
       toast.success("Document type deleted");
       router.refresh();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("document-type:updated"));
+      }
     } catch (err) {
       const message =
         (err as { message?: string })?.message ?? "Failed to delete";

@@ -7,9 +7,9 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar
+  SidebarMenuItem
 } from "@/components/ui/sidebar";
+import { usePathname } from "next/navigation";
 
 export function NavMain({
   title,
@@ -22,7 +22,12 @@ export function NavMain({
     icon: LucideIcon;
   }[];
 }) {
-  const { isMobile } = useSidebar();
+  const pathname = usePathname();
+  const isActive = (url: string) => {
+    if (!pathname) return false;
+    if (url === "/dashboard") return pathname === url;
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -30,7 +35,7 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild isActive={isActive(item.url)}>
               <a href={item.url}>
                 <item.icon />
                 <span>{item.name}</span>

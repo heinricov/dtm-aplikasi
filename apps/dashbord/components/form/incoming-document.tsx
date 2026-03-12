@@ -73,16 +73,19 @@ type BaseInfo = {
   date: string;
   docType: string;
   sender: string;
+  qty: number;
 };
 
 export default function IncomingDocumentForm({
   onSuccessClose,
   mode = "create",
-  initial
+  initial,
+  formOnly = false
 }: {
   onSuccessClose?: () => void;
   mode?: "create" | "edit" | "view";
   initial?: Partial<IncomingDocument> & { id?: string };
+  formOnly?: boolean;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -139,6 +142,7 @@ export default function IncomingDocumentForm({
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [plItems, setPlItems] = useState<PlItem[]>([]);
   const [doItems, setDoItems] = useState<DoItem[]>([]);
+  const activeSection = formOnly ? "form" : section;
   const nextDisabled =
     isView ||
     !receiptDate ||
@@ -153,7 +157,8 @@ export default function IncomingDocumentForm({
       documentTypeId ||
       "",
     sender:
-      senders.find((s) => String(s.id) === senderId)?.name || senderId || ""
+      senders.find((s) => String(s.id) === senderId)?.name || senderId || "",
+    qty: invoiceItems.length + plItems.length + doItems.length
   };
   const invoiceRows = invoiceItems.map((item, index) => ({
     key: `${index}`,
@@ -192,6 +197,73 @@ export default function IncomingDocumentForm({
       })),
     [senders]
   );
+
+  const refreshSenders = React.useCallback(async () => {
+    try {
+      const list = await getSenders();
+      setSenders(list);
+    } catch {
+      setSenders([]);
+    }
+  }, []);
+
+  const refreshSilos = React.useCallback(async () => {
+    try {
+      const list = await getSilos();
+      setSilos(list);
+    } catch {
+      setSilos([]);
+    }
+  }, []);
+
+  const refreshVendors = React.useCallback(async () => {
+    try {
+      const list = await getVendors();
+      setVendors(list);
+    } catch {
+      setVendors([]);
+    }
+  }, []);
+
+  const refreshDocumentTypes = React.useCallback(async () => {
+    try {
+      const list = await getDocumentTypes();
+      setDocTypes(list);
+    } catch {
+      setDocTypes([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!initial?.id) return;
+    if (initial?.document_type_id != null) {
+      setDocumentTypeId(String(initial.document_type_id));
+    }
+    if (initial?.sender_id != null) {
+      setSenderId(String(initial.sender_id));
+    }
+    if (initial?.document_receipt_date != null) {
+      const parsed = new Date(String(initial.document_receipt_date));
+      if (!isNaN(parsed.getTime())) {
+        setReceiptDate(parsed);
+      }
+    }
+    if (initial?.title != null) {
+      setTitleValue(String(initial.title));
+    }
+    if (typeof initial?.qty === "number") {
+      setQtyValue(String(initial.qty));
+    }
+    if (initial?.note != null) {
+      setNoteValue(String(initial.note));
+    }
+    if (initial?.description != null) {
+      setDescriptionValue(String(initial.description));
+    }
+    if (initial?.user_id != null) {
+      setUserId(String(initial.user_id));
+    }
+  }, [initial?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -239,20 +311,59 @@ export default function IncomingDocumentForm({
       mounted = false;
     };
   }, []);
+  useEffect(() => {
+    const handler = () => {
+      void refreshSenders();
+    };
+    window.addEventListener("sender:updated", handler);
+    return () => {
+      window.removeEventListener("sender:updated", handler);
+    };
+  }, [refreshSenders]);
+  useEffect(() => {
+    const handler = () => {
+      void refreshSilos();
+    };
+    window.addEventListener("silo:updated", handler);
+    return () => {
+      window.removeEventListener("silo:updated", handler);
+    };
+  }, [refreshSilos]);
+  useEffect(() => {
+    const handler = () => {
+      void refreshVendors();
+    };
+    window.addEventListener("vendor:updated", handler);
+    return () => {
+      window.removeEventListener("vendor:updated", handler);
+    };
+  }, [refreshVendors]);
+  useEffect(() => {
+    const handler = () => {
+      void refreshDocumentTypes();
+    };
+    window.addEventListener("document-type:updated", handler);
+    return () => {
+      window.removeEventListener("document-type:updated", handler);
+    };
+  }, [refreshDocumentTypes]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (e.target !== e.currentTarget) {
+      return;
+    }
     if (submitting) return;
     if (isView) return;
-    if (section === "invoice" && invoiceItems.length === 0) {
+    if (activeSection === "invoice" && invoiceItems.length === 0) {
       toast.error("Tambahkan data invoice terlebih dahulu");
       return;
     }
-    if (section === "pl" && plItems.length === 0) {
+    if (activeSection === "pl" && plItems.length === 0) {
       toast.error("Tambahkan data packing list terlebih dahulu");
       return;
     }
-    if (section === "do" && doItems.length === 0) {
+    if (activeSection === "do" && doItems.length === 0) {
       toast.error("Tambahkan data delivery order terlebih dahulu");
       return;
     }
@@ -293,7 +404,7 @@ export default function IncomingDocumentForm({
         });
         incomingId = String(created?.id ?? "");
       }
-      if (section === "invoice") {
+      if (activeSection === "invoice") {
         await Promise.all(
           invoiceItems.map((item) =>
             createReceiptInvoice({
@@ -306,7 +417,7 @@ export default function IncomingDocumentForm({
           )
         );
         toast.success("Receipt invoice created successfully");
-      } else if (section === "pl") {
+      } else if (activeSection === "pl") {
         await Promise.all(
           plItems.map((item) =>
             createReceiptPl({
@@ -318,7 +429,7 @@ export default function IncomingDocumentForm({
           )
         );
         toast.success("Receipt packing list created successfully");
-      } else if (section === "do") {
+      } else if (activeSection === "do") {
         await Promise.all(
           doItems.map((item) =>
             createReceiptDo({
@@ -340,6 +451,12 @@ export default function IncomingDocumentForm({
       }
       router.refresh();
       onSuccessClose?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("incoming-document:updated"));
+      }
+      if (!isEdit) {
+        router.push("/dashboard/incoming-document");
+      }
       setInvoiceItems([]);
       setPlItems([]);
       setDoItems([]);
@@ -356,22 +473,22 @@ export default function IncomingDocumentForm({
       <FieldGroup className="max-w-6xl mx-auto mt-10">
         <FieldSet>
           <FieldLegend>
-            {section === "form"
+            {activeSection === "form"
               ? "Incoming Document"
-              : section === "invoice"
+              : activeSection === "invoice"
                 ? "Receipt Invoice"
-                : section === "pl"
+                : activeSection === "pl"
                   ? "Receipt Packing List"
-                  : section === "do"
+                  : activeSection === "do"
                     ? "Receipt Delivery Order"
                     : "Incoming Document"}
           </FieldLegend>
-          {section === "form" && (
+          {activeSection === "form" && (
             <FieldDescription>
               All transactions are secure and encrypted
             </FieldDescription>
           )}
-          {section === "form" && (
+          {activeSection === "form" && (
             <IncomingDocumentFields
               initial={initial}
               isView={isView}
@@ -392,19 +509,23 @@ export default function IncomingDocumentForm({
               descriptionValue={descriptionValue}
               setDescriptionValue={setDescriptionValue}
               senderOptions={senderOptions}
+              refreshDocumentTypes={refreshDocumentTypes}
+              refreshSenders={refreshSenders}
             />
           )}
-          {section === "next" && (
+          {!formOnly && activeSection === "next" && (
             <NextPageButton
               onInvoice={() => setSection("invoice")}
               onPl={() => setSection("pl")}
               onDo={() => setSection("do")}
             />
           )}
-          {section === "invoice" && (
+          {!formOnly && activeSection === "invoice" && (
             <InvoiceField
               silos={silos}
               vendors={vendors}
+              refreshSilos={refreshSilos}
+              refreshVendors={refreshVendors}
               siloId={invoiceSiloId}
               setSiloId={setInvoiceSiloId}
               vendorId={invoiceVendorId}
@@ -443,7 +564,7 @@ export default function IncomingDocumentForm({
               }}
             />
           )}
-          {section === "pl" && (
+          {!formOnly && activeSection === "pl" && (
             <PlField
               silos={silos}
               siloId={plSiloId}
@@ -475,7 +596,7 @@ export default function IncomingDocumentForm({
               }}
             />
           )}
-          {section === "do" && (
+          {!formOnly && activeSection === "do" && (
             <DoField
               silos={silos}
               vendors={vendors}
@@ -513,37 +634,43 @@ export default function IncomingDocumentForm({
             />
           )}
         </FieldSet>
-        {section === "invoice" && (
+        {!formOnly && activeSection === "invoice" && (
           <TableRepeaterData
             section="invoice"
             baseInfo={baseInfo}
             rows={invoiceRows}
           />
         )}
-        {section === "pl" && (
+        {!formOnly && activeSection === "pl" && (
           <TableRepeaterData section="pl" baseInfo={baseInfo} rows={plRows} />
         )}
-        {section === "do" && (
+        {!formOnly && activeSection === "do" && (
           <TableRepeaterData section="do" baseInfo={baseInfo} rows={doRows} />
         )}
         <Separator className="my-4" />
         <div className="flex justify-end gap-2">
           {!isView &&
-            (section === "invoice" || section === "pl" || section === "do") && (
+            (formOnly ||
+              activeSection === "invoice" ||
+              activeSection === "pl" ||
+              activeSection === "do") && (
               <Button type="submit" disabled={submitting}>
                 {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
               </Button>
             )}
-          {(section === "invoice" || section === "pl" || section === "do") && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setSection("next")}
-            >
-              Back
-            </Button>
-          )}
-          {section === "next" && (
+          {!formOnly &&
+            (activeSection === "invoice" ||
+              activeSection === "pl" ||
+              activeSection === "do") && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSection("next")}
+              >
+                Back
+              </Button>
+            )}
+          {!formOnly && activeSection === "next" && (
             <Button
               type="button"
               variant="outline"
@@ -552,7 +679,7 @@ export default function IncomingDocumentForm({
               Back
             </Button>
           )}
-          {section === "form" && (
+          {!formOnly && activeSection === "form" && (
             <Button
               type="button"
               variant="outline"
@@ -566,7 +693,7 @@ export default function IncomingDocumentForm({
             <Button
               type="button"
               variant="outline"
-              onClick={() => redirect("/")}
+              onClick={() => redirect("/dashboard/incoming-document")}
             >
               Cancel
             </Button>
@@ -596,7 +723,9 @@ export function IncomingDocumentFields({
   setNoteValue,
   descriptionValue,
   setDescriptionValue,
-  senderOptions
+  senderOptions,
+  refreshDocumentTypes,
+  refreshSenders
 }: {
   initial?: Partial<IncomingDocument> & { id?: string };
   isView: boolean;
@@ -617,6 +746,8 @@ export function IncomingDocumentFields({
   descriptionValue: string;
   setDescriptionValue: (value: string) => void;
   senderOptions: Array<{ value: string; label: string }>;
+  refreshDocumentTypes: () => Promise<void>;
+  refreshSenders: () => Promise<void>;
 }) {
   return (
     <FieldGroup className="">
@@ -680,7 +811,15 @@ export function IncomingDocumentFields({
                       <Plus />
                     </Button>
                   }
-                  formFields={<DocumentTypeForm />}
+                  formFields={({ close }) => (
+                    <DocumentTypeForm
+                      onSuccess={async (created) => {
+                        await refreshDocumentTypes();
+                        setDocumentTypeId(String(created.id));
+                        close();
+                      }}
+                    />
+                  )}
                 />
               }
             />
@@ -705,7 +844,15 @@ export function IncomingDocumentFields({
                       <Plus />
                     </Button>
                   }
-                  formFields={<SenderForm />}
+                  formFields={({ close }) => (
+                    <SenderForm
+                      onSuccess={async (created) => {
+                        await refreshSenders();
+                        setSenderId(String(created.id));
+                        close();
+                      }}
+                    />
+                  )}
                 />
               }
             />
@@ -767,6 +914,8 @@ export function NextPageButton({
 export function InvoiceField({
   silos,
   vendors,
+  refreshSilos,
+  refreshVendors,
   siloId,
   setSiloId,
   vendorId,
@@ -781,6 +930,8 @@ export function InvoiceField({
 }: {
   silos: Silo[];
   vendors: Vendor[];
+  refreshSilos: () => Promise<void>;
+  refreshVendors: () => Promise<void>;
   siloId: string;
   setSiloId: (value: string) => void;
   vendorId: string;
@@ -816,7 +967,15 @@ export function InvoiceField({
                     <Plus />
                   </Button>
                 }
-                formFields={<SiloForm />}
+                formFields={({ close }) => (
+                  <SiloForm
+                    onSuccess={async (created) => {
+                      await refreshSilos();
+                      setSiloId(String(created.id));
+                      close();
+                    }}
+                  />
+                )}
               />
             }
           />
@@ -839,7 +998,15 @@ export function InvoiceField({
                     <Plus />
                   </Button>
                 }
-                formFields={<VendorForm />}
+                formFields={({ close }) => (
+                  <VendorForm
+                    onSuccess={async (created) => {
+                      await refreshVendors();
+                      setVendorId(String(created.id));
+                      close();
+                    }}
+                  />
+                )}
               />
             }
           />
@@ -1084,6 +1251,9 @@ export function TableRepeaterData({
       </div>
       <div className="flex gap-2">
         <p>Document Sender :</p> <p>{baseInfo.sender}</p>
+      </div>
+      <div className="flex gap-2">
+        <p>Total Qty :</p> <p>{baseInfo.qty}</p>
       </div>
       <Table className="mt-5">
         <TableHeader className="bg-accent">
