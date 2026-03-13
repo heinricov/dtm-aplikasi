@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 
 export function ConfirmDialog({
@@ -24,6 +23,7 @@ export function ConfirmDialog({
   trigger,
   onConfirm,
   icon,
+  dialogVarian = "destructive",
   open,
   onOpenChange,
   size = "sm"
@@ -35,6 +35,7 @@ export function ConfirmDialog({
   trigger?: React.ReactNode;
   onConfirm: () => void | Promise<void>;
   icon?: React.ReactNode;
+  dialogVarian?: "destructive" | "secondary";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   size?: "default" | "sm";
@@ -60,7 +61,13 @@ export function ConfirmDialog({
       ) : null}
       <AlertDialogContent size={size}>
         <AlertDialogHeader>
-          <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+          <AlertDialogMedia
+            className={
+              dialogVarian === "secondary"
+                ? "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-500"
+                : "bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive"
+            }
+          >
             {icon ?? <Trash2Icon />}
           </AlertDialogMedia>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -70,7 +77,10 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline">{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={handleConfirm}>
+          <AlertDialogAction
+            variant={dialogVarian === "secondary" ? "secondary" : "destructive"}
+            onClick={handleConfirm}
+          >
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

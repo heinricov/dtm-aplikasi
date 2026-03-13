@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import {
   Field,
@@ -44,10 +44,11 @@ import { FieldInput } from "../ui/field-input";
 import { FieldInputTextarea } from "../ui/field-input-textarea";
 import { FormDialog } from "../form-dialog";
 import DocumentTypeForm from "../form/document-type";
-import { Plus } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import SenderForm from "./sender";
 import VendorForm from "./vendor";
 import SiloForm from "./silo";
+import { ConfirmDialog } from "../confrim-dialog";
 
 type InvoiceItem = {
   silo_id: string;
@@ -87,6 +88,7 @@ export default function IncomingDocumentForm({
   initial?: Partial<IncomingDocument> & { id?: string };
   formOnly?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const isView = mode === "view";
@@ -149,6 +151,7 @@ export default function IncomingDocumentForm({
     titleValue.trim() === "" ||
     documentTypeId.trim() === "" ||
     senderId.trim() === "";
+  const totalQty = invoiceItems.length + plItems.length + doItems.length;
   const baseInfo = {
     title: titleValue || "",
     date: receiptDate ? format(receiptDate, "yyyy-MM-dd") : "",
@@ -158,7 +161,7 @@ export default function IncomingDocumentForm({
       "",
     sender:
       senders.find((s) => String(s.id) === senderId)?.name || senderId || "",
-    qty: invoiceItems.length + plItems.length + doItems.length
+    qty: totalQty
   };
   const invoiceRows = invoiceItems.map((item, index) => ({
     key: `${index}`,
@@ -373,7 +376,7 @@ export default function IncomingDocumentForm({
       : "";
     const document_type_id = documentTypeId.trim();
     const sender_id = senderId.trim();
-    const qty = qtyValue.trim() ? Number(qtyValue.trim()) : undefined;
+    const qty = totalQty;
     const title = titleValue.trim();
     const note = noteValue.trim();
     const description = descriptionValue.trim();
@@ -469,7 +472,7 @@ export default function IncomingDocumentForm({
     }
   }
   return (
-    <form onSubmit={onSubmit} className="">
+    <form ref={formRef} onSubmit={onSubmit} className="">
       <FieldGroup className="max-w-6xl mx-auto mt-10">
         <FieldSet>
           <FieldLegend>
@@ -653,11 +656,29 @@ export default function IncomingDocumentForm({
             (formOnly ||
               activeSection === "invoice" ||
               activeSection === "pl" ||
-              activeSection === "do") && (
+              activeSection === "do") &&
+            (isEdit ? (
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Saving..." : isEdit ? "Update" : "Add New"}
+                {submitting ? "Saving..." : "Update"}
               </Button>
-            )}
+            ) : (
+              <ConfirmDialog
+                title="Simpan Incoming Document?"
+                description="Pastikan data yang diinput sudah benar sebelum disimpan."
+                confirmLabel="Simpan"
+                cancelLabel="Batal"
+                dialogVarian="secondary"
+                icon={<Save />}
+                onConfirm={() => {
+                  formRef.current?.requestSubmit();
+                }}
+                trigger={
+                  <Button type="button" disabled={submitting}>
+                    {submitting ? "Saving..." : "Add New"}
+                  </Button>
+                }
+              />
+            ))}
           {!formOnly &&
             (activeSection === "invoice" ||
               activeSection === "pl" ||
